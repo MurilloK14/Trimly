@@ -1,8 +1,11 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
+import { useBarberSettings } from "@/hooks/use-barber-settings"
+import { BarberLogo } from "@/components/barber-logo"
 import {
   Sidebar,
   SidebarContent,
@@ -51,18 +54,28 @@ const settingsItems = [
 
 export function BarberSidebar() {
   const pathname = usePathname()
+  const { settings } = useBarberSettings()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
     <Sidebar className="border-r border-sidebar-border">
-      <SidebarHeader className="p-3 pb-2">
-        <Link href="/dashboard" className="flex flex-col items-center gap-1">
-          <Image
-            src="/logo.png"
-            alt="MK Barber"
-            width={90}
-            height={90}
-            className="object-contain drop-shadow-[0_0_8px_rgba(202,163,74,0.4)]"
-          />
+      <SidebarHeader className="p-4 border-b border-sidebar-border/30">
+        <Link href="/dashboard" className="flex flex-col items-center gap-1 w-full justify-center">
+          {mounted ? (
+            <BarberLogo
+              name={settings.name}
+              preset={settings.logoPreset}
+              customLogo={settings.logoCustom}
+              logoType={settings.logoType}
+              size="md"
+            />
+          ) : (
+            <div className="h-10 w-full animate-pulse bg-secondary/50 rounded-lg" />
+          )}
         </Link>
       </SidebarHeader>
 

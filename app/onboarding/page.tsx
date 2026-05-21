@@ -97,6 +97,17 @@ export default function OnboardingPage() {
     if (!validateForm()) return
     
     setIsLoading(true)
+
+    // Salvar as configurações iniciais no localStorage
+    const barberSettings = {
+      name: formData.nomeBarbearia,
+      logoType: formData.fotoBarbearia ? 'custom' : 'preset',
+      logoPreset: 'vintage-gold',
+      logoCustom: formData.fotoBarbearia || ''
+    }
+    localStorage.setItem('barber_settings', JSON.stringify(barberSettings))
+    window.dispatchEvent(new Event('barber-settings-updated'))
+    
     await new Promise(resolve => setTimeout(resolve, 1500))
     router.push("/dashboard")
   }

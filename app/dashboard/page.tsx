@@ -1,9 +1,12 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { useBarberSettings } from "@/hooks/use-barber-settings"
+import { useToast } from "@/hooks/use-toast"
 import {
   Calendar,
   DollarSign,
@@ -15,6 +18,7 @@ import {
   MoreHorizontal,
   CheckCircle2,
   XCircle,
+  Copy,
 } from "lucide-react"
 import {
   AreaChart,
@@ -61,6 +65,38 @@ const recentAppointments = [
 ]
 
 export default function DashboardPage() {
+  const { settings } = useBarberSettings()
+  const { toast } = useToast()
+  const [mounted, setMounted] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const getSchedulingLink = () => {
+    if (typeof window === 'undefined') return ''
+    const origin = window.location.origin
+    const params = new URLSearchParams()
+    params.set('name', settings.name)
+    params.set('logoStyle', settings.logoPreset)
+    if (settings.logoType === 'custom' && settings.logoCustom) {
+      params.set('logoType', 'custom')
+    }
+    return `${origin}/agendar?${params.toString()}`
+  }
+
+  const handleCopyLink = () => {
+    const link = getSchedulingLink()
+    navigator.clipboard.writeText(link)
+    setCopied(true)
+    toast({
+      title: "Link Copiado!",
+      description: "O link de agendamento personalizado foi copiado para a área de transferência.",
+    })
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -74,6 +110,43 @@ export default function DashboardPage() {
           Atualizado há 5 minutos
         </div>
       </div>
+
+      {/* Copiar Link Card */}
+      {mounted && (
+        <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20">
+          <CardContent className="p-5">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <h3 className="font-playfair font-semibold text-lg text-primary flex items-center gap-2">
+                  <span className="relative flex size-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full size-2 bg-primary"></span>
+                  </span>
+                  Link de Agendamento Personalizado
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Compartilhe este link com seus clientes para que eles agendem direto na sua barbearia com a sua marca e logotipo!
+                </p>
+              </div>
+              <div className="flex items-center gap-2 w-full md:w-auto max-w-md">
+                <input
+                  readOnly
+                  value={getSchedulingLink()}
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                  className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-xs font-mono text-muted-foreground focus:outline-none min-w-[200px] h-9"
+                />
+                <Button 
+                  onClick={handleCopyLink} 
+                  className="shrink-0 gap-2 h-9 font-semibold"
+                >
+                  <Copy className="size-3.5" />
+                  {copied ? "Copiado!" : "Copiar"}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

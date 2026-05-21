@@ -1,7 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
+import { BarberLogo } from "@/components/barber-logo"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -46,7 +48,47 @@ const availableTimes = [
 
 type Step = "service" | "barber" | "datetime" | "info" | "confirmation"
 
-export default function AgendarPage() {
+function AgendarContent() {
+  const searchParams = useSearchParams()
+  const [mounted, setMounted] = useState(false)
+  const [name, setName] = useState("BarberPro")
+  const [logoPreset, setLogoPreset] = useState("vintage-gold")
+  const [logoType, setLogoType] = useState<'preset' | 'custom'>('preset')
+  const [logoCustom, setLogoCustom] = useState("")
+
+  useEffect(() => {
+    setMounted(true)
+    
+    // Tentar ler os parâmetros de marca da URL (Query parameters)
+    const urlName = searchParams.get("name")
+    const urlLogoStyle = searchParams.get("logoStyle")
+    const urlLogoType = searchParams.get("logoType") as 'preset' | 'custom' | null
+
+    if (urlName) {
+      setName(urlName)
+      if (urlLogoStyle) {
+        setLogoPreset(urlLogoStyle)
+      }
+      if (urlLogoType) {
+        setLogoType(urlLogoType)
+      }
+    } else {
+      // Se não houver parâmetros, tenta ler do localStorage local
+      const stored = localStorage.getItem("barber_settings")
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored)
+          setName(parsed.name || "BarberPro")
+          setLogoPreset(parsed.logoPreset || "vintage-gold")
+          setLogoType(parsed.logoType || "preset")
+          setLogoCustom(parsed.logoCustom || "")
+        } catch (e) {
+          console.error("Erro ao carregar dados locais", e)
+        }
+      }
+    }
+  }, [searchParams])
+
   const [step, setStep] = useState<Step>("service")
   const [selectedService, setSelectedService] = useState<typeof services[0] | null>(null)
   const [selectedBarber, setSelectedBarber] = useState<typeof barbers[0] | null>(null)
@@ -90,10 +132,22 @@ export default function AgendarPage() {
       <header className="border-b border-border">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <div className="size-8 rounded-lg bg-primary flex items-center justify-center">
-              <Scissors className="size-4 text-primary-foreground" />
-            </div>
-            <span className="font-semibold text-lg">BarberPro</span>
+            {mounted ? (
+              <BarberLogo
+                name={name}
+                preset={logoPreset}
+                logoType={logoType}
+                customLogo={logoCustom}
+                size="sm"
+              />
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="size-8 rounded-lg bg-primary flex items-center justify-center">
+                  <Scissors className="size-4 text-primary-foreground" />
+                </div>
+                <span className="font-semibold text-lg">BarberPro</span>
+              </div>
+            )}
           </Link>
           <Link href="/login">
             <Button variant="ghost" size="sm">Entrar como Barbeiro</Button>
@@ -409,5 +463,17 @@ export default function AgendarPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function AgendarPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground font-playfair italic">
+        Carregando formulário de agendamento...
+      </div>
+    }>
+      <AgendarContent />
+    </Suspense>
   )
 }

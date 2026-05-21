@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -13,6 +14,91 @@ import {
   Shield, 
   Clock
 } from "lucide-react"
+
+function ProductDemoSlider() {
+  const [activeSlide, setActiveSlide] = useState(0)
+  const slides = [
+    {
+      title: "Área de Agendamento do Cliente",
+      description: "Uma interface intuitiva e personalizada com o nome e logotipo da sua barbearia. Seus clientes agendam serviços 24/7 sem atritos.",
+      image: "/scheduling_demo.png",
+      tag: "Visão do Cliente"
+    },
+    {
+      title: "Painel de Gestão do Barbeiro",
+      description: "Controle de faturamento, relatórios de ocupação, metas, gestão de profissionais e visualização de agenda em tempo real.",
+      image: "/dashboard_demo.png",
+      tag: "Visão do Administrador"
+    }
+  ]
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % slides.length)
+    }, 4500)
+    return () => clearInterval(interval)
+  }, [slides.length])
+
+  return (
+    <div className="mt-16 max-w-5xl mx-auto space-y-6">
+      {/* Dynamic Slide Details */}
+      <div className="text-center max-w-xl mx-auto space-y-2 px-4">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wider">
+          {slides[activeSlide].tag}
+        </span>
+        <h3 className="text-xl md:text-2xl font-bold tracking-tight text-foreground transition-all duration-300">{slides[activeSlide].title}</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed transition-all duration-300">{slides[activeSlide].description}</p>
+      </div>
+
+      {/* Premium Browser Mockup Container */}
+      <div className="relative rounded-2xl border border-border/80 bg-card/60 backdrop-blur-md p-2 shadow-[0_20px_50px_rgba(202,163,74,0.12)] overflow-hidden group">
+        {/* Browser Top bar decoration */}
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border/50 bg-muted/20">
+          <div className="flex gap-1.5">
+            <span className="size-3 rounded-full bg-red-500/80" />
+            <span className="size-3 rounded-full bg-yellow-500/80" />
+            <span className="size-3 rounded-full bg-green-500/80" />
+          </div>
+          <div className="flex items-center gap-1.5 bg-background/50 border border-border/50 rounded px-16 py-0.5 text-[10px] text-muted-foreground font-mono select-none">
+            {activeSlide === 0 ? "mkbarber.com/agendar" : "mkbarber.com/dashboard"}
+          </div>
+          <div className="w-12" /> {/* spacer */}
+        </div>
+
+        {/* Slide Image Box */}
+        <div className="relative aspect-[16/10] w-full overflow-hidden bg-background rounded-b-lg">
+          {slides.map((slide, index) => (
+            <div
+              key={index}
+              className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
+                index === activeSlide ? "opacity-100 scale-100 z-10" : "opacity-0 scale-95 z-0"
+              }`}
+            >
+              <img
+                src={slide.image}
+                alt={slide.title}
+                className="w-full h-full object-cover object-top"
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Navigation Dots */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2.5 bg-black/60 backdrop-blur px-3 py-1.5 rounded-full border border-white/10">
+          {slides.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setActiveSlide(index)}
+              className={`size-2 rounded-full transition-all duration-300 ${
+                index === activeSlide ? "bg-primary w-6" : "bg-white/40 hover:bg-white/70"
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function HomePage() {
   return (
@@ -45,7 +131,7 @@ export default function HomePage() {
       {/* Hero */}
       <main className="pt-32 pb-20">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
+          <div className="max-w-4xl mx-auto text-center">
             <div className="flex justify-center mb-8">
               <Image 
                 src="/logo.png" 
@@ -57,32 +143,34 @@ export default function HomePage() {
             </div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm mb-6 font-playfair italic">
               <span className="size-1.5 rounded-full bg-primary animate-pulse" />
-              Sistema de Gestão para Barbearias
+              Acelere as vendas e simplifique a agenda da sua barbearia
             </div>
 
-            {/* H1 — tamanho original, numa frase só */}
+            {/* H1 — focado em faturamento e vendas para donos de barbearia */}
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-3">
-              Transforme sua barbearia em um{" "}
-              <span style={{ fontFamily: "var(--font-rye)" }} className="text-primary">
-                negócio organizado
+              Aumente o faturamento da sua barbearia com{" "}
+              <span style={{ fontFamily: "var(--font-rye)" }} className="text-primary block mt-1">
+                agendamento automático
               </span>
             </h1>
 
             <p className="font-playfair text-lg text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
-              Tenha controle total da sua agenda, clientes e desempenho. 
-              Simplifique seu dia a dia e foque no que você faz de melhor: cortar cabelo.
+              Diga adeus ao WhatsApp lotado. Ofereça uma página de agendamento exclusiva com a sua marca e gerencie seu time, faturamento e clientes em um painel inteligente.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
               <Link href="/assinar">
                 <Button size="lg" className="gap-2 w-full sm:w-auto text-base px-8 py-6">
-                  Comece Agora <ArrowRight className="size-4" />
+                  Começar a Vender Mais <ArrowRight className="size-4" />
                 </Button>
               </Link>
             </div>
             <p className="font-playfair text-sm text-muted-foreground italic">
-              Assine e tenha acesso completo ao sistema
+              Modernize seu negócio hoje mesmo por apenas R$ 49/mês
             </p>
+
+            {/* Automatic Slide demonstration */}
+            <ProductDemoSlider />
           </div>
 
           {/* Features Grid */}
