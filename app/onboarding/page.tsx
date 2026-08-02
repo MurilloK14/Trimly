@@ -2,14 +2,15 @@
 
 import { useState, useRef } from "react"
 import Image from "next/image"
+import { db } from "@/lib/db/db"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { 
-  Scissors, 
-  ArrowRight, 
-  User, 
+import {
+  Scissors,
+  ArrowRight,
+  User,
   Building2,
   Upload,
   Camera,
@@ -35,7 +36,7 @@ export default function OnboardingPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const barbeariaInputRef = useRef<HTMLInputElement>(null)
   const barbeiroInputRef = useRef<HTMLInputElement>(null)
-  
+
   const [formData, setFormData] = useState<FormData>({
     senha: "",
     confirmarSenha: "",
@@ -68,46 +69,53 @@ export default function OnboardingPage() {
 
   const validateForm = () => {
     const newErrors: Partial<FormData> = {}
-    
+
     if (!formData.senha) {
       newErrors.senha = "Senha é obrigatória"
     } else if (formData.senha.length < 6) {
       newErrors.senha = "Senha deve ter pelo menos 6 caracteres"
     }
-    
+
     if (formData.senha !== formData.confirmarSenha) {
       newErrors.confirmarSenha = "As senhas não coincidem"
     }
-    
+
     if (!formData.nomeBarbeiro.trim()) {
       newErrors.nomeBarbeiro = "Nome é obrigatório"
     }
-    
+
     if (!formData.nomeBarbearia.trim()) {
       newErrors.nomeBarbearia = "Nome da barbearia é obrigatório"
     }
-    
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!validateForm()) return
-    
+
     setIsLoading(true)
 
-    // Salvar as configurações iniciais no localStorage
-    const barberSettings = {
+    // Salvar as configurações iniciais no banco de dados (db)
+    const slug = formData.nomeBarbearia.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+    const shop = {
+      id: "default-shop-id",
       name: formData.nomeBarbearia,
-      logoType: formData.fotoBarbearia ? 'custom' : 'preset',
-      logoPreset: 'vintage-gold',
-      logoCustom: formData.fotoBarbearia || ''
+      slug: slug || "mk-barber",
+      logo_type: (formData.fotoBarbearia ? 'custom' : 'preset') as 'custom' | 'preset',
+      logo_preset: 'vintage-gold',
+      logo_custom: formData.fotoBarbearia || '',
+      created_at: new Date().toISOString()
     }
-    localStorage.setItem('barber_settings', JSON.stringify(barberSettings))
+    await db.saveBarbershop(shop)
+
+    // Set active barbershop slug
+    localStorage.setItem('active_barbershop_slug', shop.slug)
     window.dispatchEvent(new Event('barber-settings-updated'))
-    
+
     await new Promise(resolve => setTimeout(resolve, 1500))
     router.push("/dashboard")
   }
@@ -222,15 +230,15 @@ export default function OnboardingPage() {
               <div className="space-y-2">
                 <Label>Sua foto <span className="text-muted-foreground font-normal">(opcional)</span></Label>
                 <div className="flex items-center gap-4">
-                  <div 
+                  <div
                     onClick={() => barbeiroInputRef.current?.click()}
                     className="relative size-20 rounded-full border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer overflow-hidden group bg-secondary/30 shrink-0"
                   >
                     {formData.fotoBarbeiro ? (
                       <>
-                        <img 
-                          src={formData.fotoBarbeiro} 
-                          alt="Barbeiro" 
+                        <img
+                          src={formData.fotoBarbeiro}
+                          alt="Barbeiro"
                           className="w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -291,15 +299,15 @@ export default function OnboardingPage() {
               {/* Foto da Barbearia (opcional) */}
               <div className="space-y-2">
                 <Label>Foto da barbearia <span className="text-muted-foreground font-normal">(opcional)</span></Label>
-                <div 
+                <div
                   onClick={() => barbeariaInputRef.current?.click()}
                   className="relative w-full h-36 rounded-xl border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer overflow-hidden group bg-secondary/30"
                 >
                   {formData.fotoBarbearia ? (
                     <>
-                      <img 
-                        src={formData.fotoBarbearia} 
-                        alt="Barbearia" 
+                      <img
+                        src={formData.fotoBarbearia}
+                        alt="Barbearia"
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -334,10 +342,10 @@ export default function OnboardingPage() {
             </div>
 
             {/* Submit Button */}
-            <Button 
-              type="submit" 
-              size="lg" 
-              className="w-full gap-2" 
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full gap-2"
               disabled={isLoading}
             >
               {isLoading ? (

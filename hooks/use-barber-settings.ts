@@ -1,45 +1,69 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { db, Barbershop } from '@/lib/db/db'
 
-export interface BarberSettings {
-  name: string
-  logoType: 'preset' | 'custom'
-  logoPreset: string
-  logoCustom: string // base64 data URL
-}
-
-export const DEFAULT_SETTINGS: BarberSettings = {
+export const DEFAULT_BARBERSHOP = (id: string = "default-shop-id"): Barbershop => ({
+  id,
   name: "MK Barber",
-  logoType: "preset",
-  logoPreset: "vintage-gold",
-  logoCustom: ""
-}
+  slug: "mk-barber",
+  logo_type: "preset",
+  logo_preset: "vintage-gold",
+  logo_custom: "",
+  created_at: new Date().toISOString()
+})
 
-export function useBarberSettings() {
-  const [settings, setSettings] = useState<BarberSettings>(DEFAULT_SETTINGS)
+export function useBarberSettings(slug?: string) {
+  const [settings, setSettings] = useState<Barbershop | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const loadSettings = () => {
-      if (typeof window === 'undefined') return
-      const stored = localStorage.getItem('barber_settings')
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored)
+  const loadSettings = async () => {
+    try {
+      if (slug) {
+        // Load target slug (e.g. for customer booking link /agendar/[slug])
+        const shop = await db.getBarbershop(slug)
+        if (shop) {
+          setSettings(shop)
+        } else {
+          // If slug was not found, return fallback based on slug formatting
+          const formattedName = slug
+            .split("-")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" ")
+
           setSettings({
-            name: parsed.name || DEFAULT_SETTINGS.name,
-            logoType: parsed.logoType || DEFAULT_SETTINGS.logoType,
-            logoPreset: parsed.logoPreset || DEFAULT_SETTINGS.logoPreset,
-            logoCustom: parsed.logoCustom || DEFAULT_SETTINGS.logoCustom
+            id: slug,
+            name: formattedName,
+            slug: slug,
+            logo_type: "preset",
+            logo_preset: "vintage-gold",
+            logo_custom: "",
+            created_at: new Date().toISOString()
           })
-        } catch (e) {
-          console.error("Failed to parse settings", e)
         }
+      } else {
+        // Load current active dashboard settings
+        const activeSlug = typeof window !== 'undefined'
+          ? localStorage.getItem('active_barbershop_slug') || 'mk-barber'
+          : 'mk-barber'
+
+        let shop = await db.getBarbershop(activeSlug)
+        if (!shop) {
+          // Initialize first default shop
+          const fallback = DEFAULT_BARBERSHOP()
+          await db.saveBarbershop(fallback)
+          shop = fallback
+        }
+        setSettings(shop)
       }
+    } catch (e) {
+      console.error("Failed to load settings in hook", e)
+    } finally {
       setLoading(false)
     }
+  }
 
+  useEffect(() => {
     loadSettings()
 
     const handleUpdate = () => {
@@ -50,14 +74,16 @@ export function useBarberSettings() {
     return () => {
       window.removeEventListener('barber-settings-updated', handleUpdate)
     }
-  }, [])
+  }, [slug])
 
-  const saveSettings = (newSettings: BarberSettings) => {
-    if (typeof window === 'undefined') return
-    localStorage.setItem('barber_settings', JSON.stringify(newSettings))
+  const saveSettings = async (newSettings: Barbershop) => {
+    await db.saveBarbershop(newSettings)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('active_barbershop_slug', newSettings.slug)
+    }
     setSettings(newSettings)
     window.dispatchEvent(new Event('barber-settings-updated'))
   }
 
-  return { settings, saveSettings, loading }
+  return { settings: settings || DEFAULT_BARBERSHOP(), saveSettings, loading }
 }

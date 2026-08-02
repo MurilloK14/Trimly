@@ -68,9 +68,9 @@ export function BarberSidebar() {
           {mounted ? (
             <BarberLogo
               name={settings.name}
-              preset={settings.logoPreset}
-              customLogo={settings.logoCustom}
-              logoType={settings.logoType}
+              preset={settings.logo_preset}
+              customLogo={settings.logo_custom}
+              logoType={settings.logo_type}
               size="md"
             />
           ) : (

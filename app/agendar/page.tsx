@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { BarberLogo } from "@/components/barber-logo"
+import { db, Barber, Service } from "@/lib/db/db"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,21 +26,6 @@ import {
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
-const services = [
-  { id: 1, name: "Corte Social", duration: 30, price: 40, description: "Corte tradicional com tesoura e máquina" },
-  { id: 2, name: "Corte Degradê", duration: 45, price: 50, description: "Degradê com navalhado e finalização" },
-  { id: 3, name: "Corte + Barba", duration: 60, price: 65, description: "Combo completo corte e barba" },
-  { id: 4, name: "Barba", duration: 30, price: 35, description: "Barba com toalha quente e hidratação" },
-  { id: 5, name: "Platinado", duration: 120, price: 150, description: "Descoloração completa" },
-  { id: 6, name: "Pigmentação", duration: 90, price: 120, description: "Pigmentação capilar" },
-]
-
-const barbers = [
-  { id: 1, name: "João Silva", avatar: "joao", rating: 4.9, specialties: ["Degradê", "Barba"] },
-  { id: 2, name: "Pedro Santos", avatar: "pedro", rating: 4.8, specialties: ["Platinado", "Corte Social"] },
-  { id: 3, name: "Lucas Oliveira", avatar: "lucas", rating: 4.7, specialties: ["Pigmentação", "Corte"] },
-]
-
 const availableTimes = [
   "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
   "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
@@ -48,50 +34,76 @@ const availableTimes = [
 
 type Step = "service" | "barber" | "datetime" | "info" | "confirmation"
 
-function AgendarContent() {
+function AgendarContent({ slug }: { slug?: string }) {
   const searchParams = useSearchParams()
   const [mounted, setMounted] = useState(false)
+
+  // Customização de Marca
   const [name, setName] = useState("BarberPro")
   const [logoPreset, setLogoPreset] = useState("vintage-gold")
   const [logoType, setLogoType] = useState<'preset' | 'custom'>('preset')
   const [logoCustom, setLogoCustom] = useState("")
 
-  useEffect(() => {
-    setMounted(true)
-    
-    // Tentar ler os parâmetros de marca da URL (Query parameters)
-    const urlName = searchParams.get("name")
-    const urlLogoStyle = searchParams.get("logoStyle")
-    const urlLogoType = searchParams.get("logoType") as 'preset' | 'custom' | null
+  // Dados dinâmicos
+  const [services, setServices] = useState<Service[]>([])
+  const [barbers, setBarbers] = useState<Barber[]>([])
 
-    if (urlName) {
-      setName(urlName)
-      if (urlLogoStyle) {
-        setLogoPreset(urlLogoStyle)
-      }
-      if (urlLogoType) {
-        setLogoType(urlLogoType)
-      }
-    } else {
-      // Se não houver parâmetros, tenta ler do localStorage local
-      const stored = localStorage.getItem("barber_settings")
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored)
-          setName(parsed.name || "BarberPro")
-          setLogoPreset(parsed.logoPreset || "vintage-gold")
-          setLogoType(parsed.logoType || "preset")
-          setLogoCustom(parsed.logoCustom || "")
-        } catch (e) {
-          console.error("Erro ao carregar dados locais", e)
+  useEffect(() => {
+    const loadBrandingAndData = async () => {
+      setMounted(true)
+
+      // Carregar pelo slug da URL ou pelo parâmetro query "name" ou fallback padrão
+      let activeSlug = slug || searchParams.get("name") || "mk-barber"
+      activeSlug = activeSlug.toLowerCase().replace(/\s+/g, '-')
+
+      const shop = await db.getBarbershop(activeSlug)
+      if (shop) {
+        setName(shop.name)
+        setLogoPreset(shop.logo_preset)
+        setLogoType(shop.logo_type)
+        setLogoCustom(shop.logo_custom)
+
+        // Carregar barbeiros e serviços da barbearia específica
+        const loadedBarbers = await db.getBarbers(shop.id)
+        const loadedServices = await db.getServices(shop.id)
+        setBarbers(loadedBarbers)
+        setServices(loadedServices)
+      } else {
+        // Se a barbearia não existir no banco, cria temporariamente os dados
+        const formattedName = activeSlug
+          .split("-")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ")
+
+        const tempShop = {
+          id: activeSlug,
+          name: formattedName,
+          slug: activeSlug,
+          logo_type: 'preset' as const,
+          logo_preset: 'vintage-gold',
+          logo_custom: '',
+          created_at: new Date().toISOString()
         }
+        await db.saveBarbershop(tempShop)
+
+        setName(tempShop.name)
+        setLogoPreset(tempShop.logo_preset)
+        setLogoType(tempShop.logo_type)
+        setLogoCustom(tempShop.logo_custom)
+
+        const loadedBarbers = await db.getBarbers(tempShop.id)
+        const loadedServices = await db.getServices(tempShop.id)
+        setBarbers(loadedBarbers)
+        setServices(loadedServices)
       }
     }
-  }, [searchParams])
+
+    loadBrandingAndData()
+  }, [slug, searchParams])
 
   const [step, setStep] = useState<Step>("service")
-  const [selectedService, setSelectedService] = useState<typeof services[0] | null>(null)
-  const [selectedBarber, setSelectedBarber] = useState<typeof barbers[0] | null>(null)
+  const [selectedService, setSelectedService] = useState<Service | null>(null)
+  const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [clientInfo, setClientInfo] = useState({ name: "", phone: "", email: "" })
@@ -164,10 +176,10 @@ function AgendarContent() {
                 <div className="flex flex-col items-center">
                   <div
                     className={`size-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${index < currentStepIndex
+                      ? "bg-primary text-primary-foreground"
+                      : index === currentStepIndex
                         ? "bg-primary text-primary-foreground"
-                        : index === currentStepIndex
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary text-muted-foreground"
+                        : "bg-secondary text-muted-foreground"
                       }`}
                   >
                     {index < currentStepIndex ? (
@@ -204,8 +216,8 @@ function AgendarContent() {
                   <Card
                     key={service.id}
                     className={`cursor-pointer transition-all hover:border-primary/50 ${selectedService?.id === service.id
-                        ? "border-primary bg-primary/5"
-                        : "bg-card border-border"
+                      ? "border-primary bg-primary/5"
+                      : "bg-card border-border"
                       }`}
                     onClick={() => setSelectedService(service)}
                   >
@@ -248,14 +260,14 @@ function AgendarContent() {
                   <Card
                     key={barber.id}
                     className={`cursor-pointer transition-all hover:border-primary/50 ${selectedBarber?.id === barber.id
-                        ? "border-primary bg-primary/5"
-                        : "bg-card border-border"
+                      ? "border-primary bg-primary/5"
+                      : "bg-card border-border"
                       }`}
                     onClick={() => setSelectedBarber(barber)}
                   >
                     <CardContent className="p-4 flex items-center gap-4">
                       <Avatar className="size-14">
-                        <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${barber.avatar}`} />
+                        <AvatarImage src={barber.avatar.startsWith("data:") ? barber.avatar : `https://api.dicebear.com/7.x/avataaars/svg?seed=${barber.avatar}`} />
                         <AvatarFallback>{barber.name[0]}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
@@ -466,14 +478,14 @@ function AgendarContent() {
   )
 }
 
-export default function AgendarPage() {
+export default function AgendarPage({ slug }: { slug?: string }) {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground font-playfair italic">
         Carregando formulário de agendamento...
       </div>
     }>
-      <AgendarContent />
+      <AgendarContent slug={slug} />
     </Suspense>
   )
 }

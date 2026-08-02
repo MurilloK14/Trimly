@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useBarberSettings } from "@/hooks/use-barber-settings"
 import { useToast } from "@/hooks/use-toast"
 import { BarberLogo } from "@/components/barber-logo"
+import { db, Barber, Service } from "@/lib/db/db"
 import {
   Select,
   SelectContent,
@@ -26,29 +27,66 @@ import {
   Shield,
   Camera,
   Upload,
+  Users,
+  Scissors,
+  Trash2,
+  Plus,
+  Star,
 } from "lucide-react"
 
 export default function ConfiguracoesPage() {
   const { settings, saveSettings } = useBarberSettings()
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
-  
+
   // Customização de Marca
   const [name, setName] = useState("")
+  const [slug, setSlug] = useState("")
   const [logoType, setLogoType] = useState<'preset' | 'custom'>('preset')
   const [logoPreset, setLogoPreset] = useState("vintage-gold")
   const [logoCustom, setLogoCustom] = useState("")
   const [copied, setCopied] = useState(false)
 
+  // Gestão de Profissionais
+  const [barbers, setBarbers] = useState<Barber[]>([])
+  const [newBarberName, setNewBarberName] = useState("")
+  const [newBarberSpecialties, setNewBarberSpecialties] = useState("")
+  const [newBarberAvatar, setNewBarberAvatar] = useState("carlos")
+  const [newBarberAvatarFile, setNewBarberAvatarFile] = useState("")
+
+  // Gestão de Serviços
+  const [services, setServices] = useState<Service[]>([])
+  const [newServiceName, setNewServiceName] = useState("")
+  const [newServicePrice, setNewServicePrice] = useState("")
+  const [newServiceDuration, setNewServiceDuration] = useState("")
+  const [newServiceDescription, setNewServiceDescription] = useState("")
+
   useEffect(() => {
     setMounted(true)
     if (settings) {
       setName(settings.name)
-      setLogoType(settings.logoType)
-      setLogoPreset(settings.logoPreset)
-      setLogoCustom(settings.logoCustom)
+      setSlug(settings.slug)
+      setLogoType(settings.logo_type)
+      setLogoPreset(settings.logo_preset)
+      setLogoCustom(settings.logo_custom)
     }
   }, [settings])
+
+  // Carregar dados de barbeiros e serviços
+  const loadData = async () => {
+    if (settings?.id) {
+      const loadedBarbers = await db.getBarbers(settings.id)
+      const loadedServices = await db.getServices(settings.id)
+      setBarbers(loadedBarbers)
+      setServices(loadedServices)
+    }
+  }
+
+  useEffect(() => {
+    if (settings?.id) {
+      loadData()
+    }
+  }, [settings?.id])
 
   const handleSaveBranding = () => {
     if (!name.trim()) {
@@ -59,12 +97,18 @@ export default function ConfiguracoesPage() {
       })
       return
     }
+
+    const cleanSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-') || name.toLowerCase().replace(/\s+/g, '-')
+
     saveSettings({
+      ...settings,
       name,
-      logoType,
-      logoPreset,
-      logoCustom
+      slug: cleanSlug,
+      logo_type: logoType,
+      logo_preset: logoPreset,
+      logo_custom: logoCustom
     })
+
     toast({
       title: "Configurações Salvas!",
       description: "A identidade visual da sua barbearia foi atualizada com sucesso.",
@@ -86,13 +130,8 @@ export default function ConfiguracoesPage() {
   const getDynamicLink = () => {
     if (typeof window === 'undefined') return ''
     const origin = window.location.origin
-    const params = new URLSearchParams()
-    params.set('name', name)
-    params.set('logoStyle', logoPreset)
-    if (logoType === 'custom' && logoCustom) {
-      params.set('logoType', 'custom')
-    }
-    return `${origin}/agendar?${params.toString()}`
+    const cleanSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-') || 'mk-barber'
+    return `${origin}/agendar/${cleanSlug}`
   }
 
   const handleCopy = () => {
@@ -100,17 +139,106 @@ export default function ConfiguracoesPage() {
     setCopied(true)
     toast({
       title: "Link Copiado!",
-      description: "O link com sua identidade visual foi copiado.",
+      description: "O link de agendamento personalizado foi copiado.",
     })
     setTimeout(() => setCopied(false), 2000)
   }
 
+  // Ações de Barbeiros
+  const handleAddBarber = async () => {
+    if (!newBarberName.trim()) {
+      toast({
+        title: "Nome obrigatório",
+        description: "O nome do profissional é necessário.",
+        variant: "destructive"
+      })
+      return
+    }
+    const avatar = newBarberAvatarFile || newBarberAvatar
+    await db.saveBarber({
+      id: Math.random().toString(36).substring(2, 9),
+      barbershop_id: settings.id,
+      name: newBarberName,
+      avatar,
+      rating: 5.0,
+      specialties: newBarberSpecialties.split(",").map(s => s.trim()).filter(Boolean),
+      created_at: new Date().toISOString()
+    })
+    setNewBarberName("")
+    setNewBarberSpecialties("")
+    setNewBarberAvatarFile("")
+    loadData()
+    toast({
+      title: "Barbeiro Adicionado!",
+      description: "O profissional foi cadastrado com sucesso."
+    })
+  }
+
+  const handleDeleteBarber = async (id: string) => {
+    await db.deleteBarber(id)
+    loadData()
+    toast({
+      title: "Barbeiro Removido",
+      description: "O profissional foi removido da equipe."
+    })
+  }
+
+  const handleBarberAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setNewBarberAvatarFile(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  // Ações de Serviços
+  const handleAddService = async () => {
+    if (!newServiceName.trim() || !newServicePrice || !newServiceDuration) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Nome, preço e duração são necessários.",
+        variant: "destructive"
+      })
+      return
+    }
+    await db.saveService({
+      id: Math.random().toString(36).substring(2, 9),
+      barbershop_id: settings.id,
+      name: newServiceName,
+      duration: parseInt(newServiceDuration),
+      price: parseFloat(newServicePrice),
+      description: newServiceDescription,
+      created_at: new Date().toISOString()
+    })
+    setNewServiceName("")
+    setNewServicePrice("")
+    setNewServiceDuration("")
+    setNewServiceDescription("")
+    loadData()
+    toast({
+      title: "Serviço Adicionado!",
+      description: "O serviço foi cadastrado com sucesso."
+    })
+  }
+
+  const handleDeleteService = async (id: string) => {
+    await db.deleteService(id)
+    loadData()
+    toast({
+      title: "Serviço Removido",
+      description: "O serviço foi excluído da lista."
+    })
+  }
+
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-4xl pb-16">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold">Configurações</h1>
-        <p className="text-muted-foreground">Gerencie as configurações da sua conta</p>
+        <p className="text-muted-foreground">Gerencie as configurações e identidade do seu negócio</p>
       </div>
 
       {/* Brand Branding Section */}
@@ -121,7 +249,7 @@ export default function ConfiguracoesPage() {
               <Palette className="size-4 text-primary" />
               <CardTitle className="text-base font-medium">Marca da Barbearia</CardTitle>
             </div>
-            <CardDescription>Personalize o nome, estilo visual e logomarca exibidos no agendamento e painel administrativo</CardDescription>
+            <CardDescription>Personalize o nome, link e logotipo exibidos na sua página pública de agendamento</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2">
@@ -129,13 +257,30 @@ export default function ConfiguracoesPage() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="brand-name">Nome da Barbearia</Label>
-                  <Input 
-                    id="brand-name" 
-                    value={name} 
-                    onChange={(e) => setName(e.target.value)} 
-                    className="bg-secondary/50 border-border h-10" 
+                  <Input
+                    id="brand-name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="bg-secondary/50 border-border h-10"
                     placeholder="Ex: Barbearia Imperial"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="brand-slug">Link Personalizado (Slug)</Label>
+                  <div className="flex items-center">
+                    <span className="bg-secondary/70 border border-r-0 border-border rounded-l-lg h-10 px-3 text-xs flex items-center text-muted-foreground select-none">
+                      /agendar/
+                    </span>
+                    <Input
+                      id="brand-slug"
+                      value={slug}
+                      onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
+                      className="bg-secondary/50 border-border h-10 rounded-l-none"
+                      placeholder="barbearia-premium"
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Apenas letras minúsculas, números e hifens.</p>
                 </div>
 
                 <div className="space-y-2">
@@ -155,7 +300,7 @@ export default function ConfiguracoesPage() {
                       className="flex-1 text-xs sm:text-sm"
                       onClick={() => setLogoType('custom')}
                     >
-                      Upload de Imagem (Opcional)
+                      Upload de Imagem
                     </Button>
                   </div>
                 </div>
@@ -174,11 +319,10 @@ export default function ConfiguracoesPage() {
                           key={preset.id}
                           type="button"
                           onClick={() => setLogoPreset(preset.id)}
-                          className={`p-3 rounded-lg border text-left text-xs transition-colors flex items-center justify-between ${
-                            logoPreset === preset.id
+                          className={`p-3 rounded-lg border text-left text-xs transition-colors flex items-center justify-between ${logoPreset === preset.id
                               ? 'border-primary bg-primary/10 text-primary'
                               : 'border-border bg-secondary/20 text-muted-foreground hover:bg-secondary/30'
-                          }`}
+                            }`}
                         >
                           {preset.label}
                           {logoPreset === preset.id && <span className="size-1.5 rounded-full bg-primary" />}
@@ -263,6 +407,210 @@ export default function ConfiguracoesPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Equipe / Profissionais Section */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Users className="size-4 text-primary" />
+            <CardTitle className="text-base font-medium">Equipe de Profissionais</CardTitle>
+          </div>
+          <CardDescription>Cadastre e gerencie os barbeiros e a agenda da sua barbearia</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* List of current barbers */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            {barbers.map((barber) => (
+              <div key={barber.id} className="p-4 rounded-xl border border-border bg-secondary/15 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <Avatar className="size-12">
+                    <AvatarImage src={barber.avatar.startsWith("data:") ? barber.avatar : `https://api.dicebear.com/7.x/avataaars/svg?seed=${barber.avatar}`} />
+                    <AvatarFallback>{barber.name[0]}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h4 className="font-semibold text-sm flex items-center gap-1.5">
+                      {barber.name}
+                      <span className="text-xs text-muted-foreground flex items-center gap-0.5">
+                        <Star className="size-3 text-primary fill-primary" />
+                        {barber.rating}
+                      </span>
+                    </h4>
+                    <p className="text-xs text-muted-foreground">{barber.specialties.join(", ")}</p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDeleteBarber(barber.id)}
+                  className="text-destructive hover:bg-destructive/10 shrink-0"
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          <Separator />
+
+          {/* Form to add a new barber */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold">Adicionar Novo Profissional</h4>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="barber-name">Nome do Barbeiro</Label>
+                <Input
+                  id="barber-name"
+                  value={newBarberName}
+                  onChange={(e) => setNewBarberName(e.target.value)}
+                  className="bg-secondary/50 border-border h-10"
+                  placeholder="Ex: Carlos Silva"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="barber-specialties">Especialidades (separadas por vírgula)</Label>
+                <Input
+                  id="barber-specialties"
+                  value={newBarberSpecialties}
+                  onChange={(e) => setNewBarberSpecialties(e.target.value)}
+                  className="bg-secondary/50 border-border h-10"
+                  placeholder="Ex: Degradê, Barba, Navalhado"
+                />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Avatar / Foto do Barbeiro</Label>
+                <div className="flex flex-wrap items-center gap-4">
+                  {/* Select preset seeds */}
+                  <div className="flex gap-2">
+                    {['carlos', 'mateus', 'daniel', 'lucas'].map((seed) => (
+                      <button
+                        key={seed}
+                        type="button"
+                        onClick={() => {
+                          setNewBarberAvatar(seed);
+                          setNewBarberAvatarFile("");
+                        }}
+                        className={`size-10 rounded-full border transition-all ${newBarberAvatar === seed && !newBarberAvatarFile ? 'border-primary ring-2 ring-primary/20 scale-105' : 'border-border opacity-70 hover:opacity-100'}`}
+                      >
+                        <Avatar className="size-full">
+                          <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`} />
+                        </Avatar>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="text-xs text-muted-foreground">ou envie uma foto:</div>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleBarberAvatarUpload}
+                      className="text-xs bg-secondary/30 h-9 file:text-xs file:bg-primary file:text-primary-foreground file:border-0 file:rounded-md cursor-pointer max-w-[200px]"
+                    />
+                    {newBarberAvatarFile && (
+                      <img src={newBarberAvatarFile} className="size-8 rounded-full object-cover border border-primary" />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <Button onClick={handleAddBarber} className="gap-1.5 h-10">
+              <Plus className="size-4" /> Adicionar à Equipe
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Serviços Section */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Scissors className="size-4 text-primary" />
+            <CardTitle className="text-base font-medium">Serviços da Barbearia</CardTitle>
+          </div>
+          <CardDescription>Cadastre e gerencie a lista de serviços que seus clientes podem agendar</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* List of current services */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            {services.map((service) => (
+              <div key={service.id} className="p-4 rounded-xl border border-border bg-secondary/15 flex items-center justify-between gap-4">
+                <div>
+                  <h4 className="font-semibold text-sm">{service.name}</h4>
+                  <p className="text-xs text-muted-foreground leading-normal mb-1">{service.description}</p>
+                  <div className="flex gap-3 text-xs">
+                    <span className="text-primary font-medium">R$ {service.price}</span>
+                    <span className="text-muted-foreground">•</span>
+                    <span className="text-muted-foreground">{service.duration} min</span>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDeleteService(service.id)}
+                  className="text-destructive hover:bg-destructive/10 shrink-0"
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          <Separator />
+
+          {/* Form to add a new service */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold">Adicionar Novo Serviço</h4>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="service-name">Nome do Serviço</Label>
+                <Input
+                  id="service-name"
+                  value={newServiceName}
+                  onChange={(e) => setNewServiceName(e.target.value)}
+                  className="bg-secondary/50 border-border h-10"
+                  placeholder="Ex: Corte Navalhado"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="service-price">Preço (R$)</Label>
+                <Input
+                  id="service-price"
+                  type="number"
+                  value={newServicePrice}
+                  onChange={(e) => setNewServicePrice(e.target.value)}
+                  className="bg-secondary/50 border-border h-10"
+                  placeholder="Ex: 50"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="service-duration">Duração (minutos)</Label>
+                <Input
+                  id="service-duration"
+                  type="number"
+                  value={newServiceDuration}
+                  onChange={(e) => setNewServiceDuration(e.target.value)}
+                  className="bg-secondary/50 border-border h-10"
+                  placeholder="Ex: 45"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="service-desc">Descrição Curta</Label>
+                <Input
+                  id="service-desc"
+                  value={newServiceDescription}
+                  onChange={(e) => setNewServiceDescription(e.target.value)}
+                  className="bg-secondary/50 border-border h-10"
+                  placeholder="Ex: Finalização com toalha quente e pomada premium"
+                />
+              </div>
+            </div>
+            <Button onClick={handleAddService} className="gap-1.5 h-10">
+              <Plus className="size-4" /> Adicionar Serviço
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Profile Section */}
       <Card className="bg-card border-border">
         <CardHeader>
           <div className="flex items-center gap-2">

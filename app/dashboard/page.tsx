@@ -77,13 +77,8 @@ export default function DashboardPage() {
   const getSchedulingLink = () => {
     if (typeof window === 'undefined') return ''
     const origin = window.location.origin
-    const params = new URLSearchParams()
-    params.set('name', settings.name)
-    params.set('logoStyle', settings.logoPreset)
-    if (settings.logoType === 'custom' && settings.logoCustom) {
-      params.set('logoType', 'custom')
-    }
-    return `${origin}/agendar?${params.toString()}`
+    const cleanSlug = settings.slug || 'mk-barber'
+    return `${origin}/agendar/${cleanSlug}`
   }
 
   const handleCopyLink = () => {
