@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -26,7 +26,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -42,51 +41,25 @@ import {
   MoreHorizontal,
   Clock,
   User,
-  Scissors,
   Phone,
   Check,
   X,
   ChevronLeft,
   ChevronRight,
-  Filter,
+  Loader2,
+  Calendar,
 } from "lucide-react"
 import { format, addDays, subDays } from "date-fns"
 import { ptBR } from "date-fns/locale"
-
-type AppointmentStatus = "confirmed" | "pending" | "completed" | "cancelled"
-
-interface Appointment {
-  id: number
-  client: string
-  phone: string
-  service: string
-  time: string
-  duration: number
-  status: AppointmentStatus
-  avatar: string
-  value: number
-}
-
-const appointments: Appointment[] = [
-  { id: 1, client: "Pedro Almeida", phone: "(11) 99999-1234", service: "Corte + Barba", time: "09:00", duration: 60, status: "confirmed", avatar: "pedro", value: 65 },
-  { id: 2, client: "Lucas Santos", phone: "(11) 98888-5678", service: "Corte Degradê", time: "10:00", duration: 45, status: "confirmed", avatar: "lucas", value: 50 },
-  { id: 3, client: "Rafael Costa", phone: "(11) 97777-9012", service: "Platinado", time: "11:00", duration: 120, status: "pending", avatar: "rafael", value: 150 },
-  { id: 4, client: "Marcos Oliveira", phone: "(11) 96666-3456", service: "Barba", time: "13:00", duration: 30, status: "confirmed", avatar: "marcos", value: 35 },
-  { id: 5, client: "Bruno Lima", phone: "(11) 95555-7890", service: "Corte Social", time: "14:00", duration: 30, status: "completed", avatar: "bruno", value: 40 },
-  { id: 6, client: "Fernando Souza", phone: "(11) 94444-2345", service: "Corte + Barba", time: "15:00", duration: 60, status: "cancelled", avatar: "fernando", value: 65 },
-  { id: 7, client: "Carlos Silva", phone: "(11) 93333-6789", service: "Corte Navalhado", time: "16:00", duration: 45, status: "pending", avatar: "carlos", value: 55 },
-  { id: 8, client: "André Pereira", phone: "(11) 92222-0123", service: "Pigmentação", time: "17:00", duration: 90, status: "confirmed", avatar: "andre", value: 120 },
-]
-
-const services = [
-  { name: "Corte Social", duration: 30, price: 40 },
-  { name: "Corte Degradê", duration: 45, price: 50 },
-  { name: "Corte Navalhado", duration: 45, price: 55 },
-  { name: "Corte + Barba", duration: 60, price: 65 },
-  { name: "Barba", duration: 30, price: 35 },
-  { name: "Platinado", duration: 120, price: 150 },
-  { name: "Pigmentação", duration: 90, price: 120 },
-]
+import { useToast } from "@/hooks/use-toast"
+import {
+  getAdminAppointments,
+  updateAppointmentStatus,
+  getAdminBookingResources,
+  createAdminAppointment,
+  type AdminAppointment,
+  type BookingResources,
+} from "@/lib/actions/appointments"
 
 const statusConfig = {
   confirmed: { label: "Confirmado", color: "bg-green-500/10 text-green-500 border-green-500/20" },
@@ -96,10 +69,118 @@ const statusConfig = {
 }
 
 export default function AgendaPage() {
+  const { toast } = useToast()
   const [selectedDate, setSelectedDate] = useState(new Date())
-  const [filter, setFilter] = useState<AppointmentStatus | "all">("all")
+  const [filter, setFilter] = useState<'all' | 'confirmed' | 'pending' | 'completed' | 'cancelled'>("all")
+  
+  const [appointmentsList, setAppointmentsList] = useState<AdminAppointment[]>([])
+  const [loading, setLoading] = useState(true)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  const [resources, setResources] = useState<BookingResources>({ barbers: [], services: [] })
+  
+  // Form fields for new appointment
+  const [newAppt, setNewAppt] = useState({
+    clientName: "",
+    clientPhone: "",
+    barberId: "",
+    serviceId: "",
+    date: "",
+    time: "",
+  })
 
-  const filteredAppointments = appointments.filter(
+  // Load appointments from DB
+  const loadAppointments = useCallback(async () => {
+    setLoading(true)
+    const dateStr = format(selectedDate, "yyyy-MM-dd")
+    const result = await getAdminAppointments(dateStr)
+    
+    if (result.success) {
+      setAppointmentsList(result.data)
+    } else {
+      toast({
+        title: "Erro ao carregar",
+        description: result.error,
+        variant: "destructive",
+      })
+    }
+    setLoading(false)
+  }, [selectedDate, toast])
+
+  // Load resources for dropdowns on mount
+  useEffect(() => {
+    async function loadResources() {
+      const result = await getAdminBookingResources()
+      if (result.success) {
+        setResources(result.data)
+      }
+    }
+    loadResources()
+  }, [])
+
+  useEffect(() => {
+    loadAppointments()
+  }, [loadAppointments])
+
+  const handleStatusChange = async (id: string, status: 'confirmed' | 'cancelled' | 'completed') => {
+    const result = await updateAppointmentStatus(id, status)
+    if (result.success) {
+      toast({
+        title: "Status atualizado",
+        description: `Agendamento marcado como ${statusConfig[status].label.toLowerCase()}.`,
+      })
+      loadAppointments()
+    } else {
+      toast({
+        title: "Erro",
+        description: result.error,
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleCreateAppointment = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newAppt.clientName || !newAppt.clientPhone || !newAppt.barberId || !newAppt.serviceId || !newAppt.date || !newAppt.time) {
+      toast({
+        title: "Campos em falta",
+        description: "Por favor, preencha todos os campos.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSubmitting(true)
+    const result = await createAdminAppointment(newAppt)
+    setIsSubmitting(false)
+
+    if (result.success) {
+      toast({
+        title: "Agendado!",
+        description: "Agendamento criado com sucesso no painel.",
+      })
+      setIsDialogOpen(false)
+      // Reset form
+      setNewAppt({
+        clientName: "",
+        clientPhone: "",
+        barberId: "",
+        serviceId: "",
+        date: "",
+        time: "",
+      })
+      loadAppointments()
+    } else {
+      toast({
+        title: "Erro ao agendar",
+        description: result.error,
+        variant: "destructive",
+      })
+    }
+  }
+
+  const filteredAppointments = appointmentsList.filter(
     (apt) => filter === "all" || apt.status === filter
   )
 
@@ -115,62 +196,116 @@ export default function AgendaPage() {
           <h1 className="text-2xl font-bold">Agenda</h1>
           <p className="text-muted-foreground">Gerencie seus agendamentos do dia</p>
         </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="size-4" />
-              Novo Agendamento
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Novo Agendamento</DialogTitle>
-              <DialogDescription>
-                Preencha os dados para criar um novo agendamento
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
+        <Button className="gap-2" onClick={() => setIsDialogOpen(true)}>
+          <Plus className="size-4" />
+          Novo Agendamento
+        </Button>
+      </div>
+
+      {/* Dialog for New Appointment */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>Novo Agendamento</DialogTitle>
+            <DialogDescription>
+              Preencha os dados para criar um novo agendamento manual no painel.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateAppointment} className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="client">Nome do Cliente</Label>
+              <Input
+                id="client"
+                placeholder="Ex: Pedro Almeida"
+                value={newAppt.clientName}
+                onChange={e => setNewAppt({ ...newAppt, clientName: e.target.value })}
+                className="bg-secondary/50 border-border"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Telefone</Label>
+              <Input
+                id="phone"
+                placeholder="Ex: (11) 99999-1234"
+                value={newAppt.clientPhone}
+                onChange={e => setNewAppt({ ...newAppt, clientPhone: e.target.value })}
+                className="bg-secondary/50 border-border"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="barber">Profissional</Label>
+              <Select
+                value={newAppt.barberId}
+                onValueChange={val => setNewAppt({ ...newAppt, barberId: val })}
+              >
+                <SelectTrigger className="bg-secondary/50 border-border">
+                  <SelectValue placeholder="Selecione o profissional" />
+                </SelectTrigger>
+                <SelectContent>
+                  {resources.barbers.map((b) => (
+                    <SelectItem key={b.id} value={b.id}>
+                      {b.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="service">Serviço</Label>
+              <Select
+                value={newAppt.serviceId}
+                onValueChange={val => setNewAppt({ ...newAppt, serviceId: val })}
+              >
+                <SelectTrigger className="bg-secondary/50 border-border">
+                  <SelectValue placeholder="Selecione o serviço" />
+                </SelectTrigger>
+                <SelectContent>
+                  {resources.services.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name} - {s.durationMinutes} min - R$ {s.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="client">Nome do Cliente</Label>
-                <Input id="client" placeholder="Digite o nome" />
+                <Label htmlFor="date">Data</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={newAppt.date}
+                  onChange={e => setNewAppt({ ...newAppt, date: e.target.value })}
+                  className="bg-secondary/50 border-border text-foreground"
+                  required
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
-                <Input id="phone" placeholder="(00) 00000-0000" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="service">Serviço</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o serviço" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {services.map((service) => (
-                      <SelectItem key={service.name} value={service.name}>
-                        {service.name} - R$ {service.price}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="date">Data</Label>
-                  <Input id="date" type="date" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="time">Horário</Label>
-                  <Input id="time" type="time" />
-                </div>
+                <Label htmlFor="time">Horário</Label>
+                <Input
+                  id="time"
+                  type="time"
+                  value={newAppt.time}
+                  onChange={e => setNewAppt({ ...newAppt, time: e.target.value })}
+                  className="bg-secondary/50 border-border text-foreground"
+                  required
+                />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline">Cancelar</Button>
-              <Button>Agendar</Button>
+            <DialogFooter className="pt-4">
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
+                Agendar
+              </Button>
             </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Date Navigation & Stats */}
       <div className="grid gap-4 lg:grid-cols-4">
@@ -184,7 +319,7 @@ export default function AgendaPage() {
               <ChevronLeft className="size-4" />
             </Button>
             <div className="text-center">
-              <p className="text-lg font-semibold">
+              <p className="text-lg font-semibold capitalize">
                 {format(selectedDate, "EEEE", { locale: ptBR })}
               </p>
               <p className="text-sm text-muted-foreground">
@@ -216,10 +351,10 @@ export default function AgendaPage() {
         <Card className="bg-card border-border">
           <CardContent className="p-4 flex items-center gap-4">
             <div className="size-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-              <Scissors className="size-5 text-green-500" />
+              <Calendar className="size-5 text-green-500" />
             </div>
             <div>
-              <p className="text-2xl font-bold">R$ {totalRevenue}</p>
+              <p className="text-2xl font-bold">R$ {totalRevenue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
               <p className="text-sm text-muted-foreground">Previsto</p>
             </div>
           </CardContent>
@@ -235,7 +370,7 @@ export default function AgendaPage() {
         >
           Todos
         </Button>
-        {(Object.keys(statusConfig) as AppointmentStatus[]).map((status) => (
+        {([ "confirmed", "pending", "completed", "cancelled" ] as const).map((status) => (
           <Button
             key={status}
             variant={filter === status ? "default" : "outline"}
@@ -253,82 +388,104 @@ export default function AgendaPage() {
           <CardTitle className="text-base font-medium">Lista de Agendamentos</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent border-border">
-                  <TableHead className="text-muted-foreground">Cliente</TableHead>
-                  <TableHead className="text-muted-foreground">Serviço</TableHead>
-                  <TableHead className="text-muted-foreground">Horário</TableHead>
-                  <TableHead className="text-muted-foreground">Duração</TableHead>
-                  <TableHead className="text-muted-foreground">Valor</TableHead>
-                  <TableHead className="text-muted-foreground">Status</TableHead>
-                  <TableHead className="text-muted-foreground text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAppointments.map((appointment) => (
-                  <TableRow key={appointment.id} className="border-border hover:bg-secondary/30">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="size-8">
-                          <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${appointment.avatar}`} />
-                          <AvatarFallback>{appointment.client[0]}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium text-sm">{appointment.client}</p>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Phone className="size-3" />
-                            {appointment.phone}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm">{appointment.service}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="font-mono">
-                        {appointment.time}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {appointment.duration} min
-                    </TableCell>
-                    <TableCell className="font-medium text-primary">
-                      R$ {appointment.value}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={statusConfig[appointment.status].color}>
-                        {statusConfig[appointment.status].label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-8">
-                            <MoreHorizontal className="size-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Check className="size-4 mr-2" />
-                            Confirmar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <User className="size-4 mr-2" />
-                            Ver Cliente
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
-                            <X className="size-4 mr-2" />
-                            Cancelar
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+          {loading ? (
+            <div className="py-20 flex justify-center items-center gap-2 text-muted-foreground">
+              <Loader2 className="size-6 animate-spin" />
+              Carregando agenda...
+            </div>
+          ) : filteredAppointments.length === 0 ? (
+            <div className="py-20 text-center text-sm text-muted-foreground">
+              Nenhum agendamento encontrado para esta data ou filtro.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent border-border">
+                    <TableHead className="text-muted-foreground">Cliente</TableHead>
+                    <TableHead className="text-muted-foreground">Serviço</TableHead>
+                    <TableHead className="text-muted-foreground">Horário</TableHead>
+                    <TableHead className="text-muted-foreground">Duração</TableHead>
+                    <TableHead className="text-muted-foreground">Valor</TableHead>
+                    <TableHead className="text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-muted-foreground text-right">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredAppointments.map((appointment) => (
+                    <TableRow key={appointment.id} className="border-border hover:bg-secondary/30">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="size-8">
+                            <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${appointment.avatar}`} />
+                            <AvatarFallback>{appointment.clientName[0]}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium text-sm">{appointment.clientName}</p>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Phone className="size-3" />
+                              {appointment.clientPhone}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        <div>
+                          {appointment.serviceName}
+                          <p className="text-[10px] text-muted-foreground">Atendente: {appointment.barberName}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="font-mono">
+                          {appointment.time}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {appointment.duration} min
+                      </TableCell>
+                      <TableCell className="font-medium text-primary">
+                        R$ {appointment.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={statusConfig[appointment.status].color}>
+                          {statusConfig[appointment.status].label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="size-8">
+                              <MoreHorizontal className="size-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {appointment.status !== 'confirmed' && appointment.status !== 'completed' && (
+                              <DropdownMenuItem onClick={() => handleStatusChange(appointment.id, 'confirmed')}>
+                                <Check className="size-4 mr-2" />
+                                Confirmar
+                              </DropdownMenuItem>
+                            )}
+                            {appointment.status === 'confirmed' && (
+                              <DropdownMenuItem onClick={() => handleStatusChange(appointment.id, 'completed')}>
+                                <Check className="size-4 mr-2" />
+                                Concluir
+                              </DropdownMenuItem>
+                            )}
+                            {appointment.status !== 'cancelled' && (
+                              <DropdownMenuItem className="text-destructive" onClick={() => handleStatusChange(appointment.id, 'cancelled')}>
+                                <X className="size-4 mr-2" />
+                                Cancelar
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

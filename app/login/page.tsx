@@ -8,17 +8,33 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Eye, EyeOff, ArrowRight } from "lucide-react"
+import { login } from "@/lib/actions/auth"
+import { useToast } from "@/hooks/use-toast"
 
 export default function LoginPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    router.push("/dashboard")
+    setErrorMsg(null)
+
+    const formData = new FormData(e.currentTarget)
+    const result = await login(formData)
+
+    if (result && !result.success) {
+      setErrorMsg(result.error)
+      toast({
+        title: "Erro ao entrar",
+        description: result.error,
+        variant: "destructive",
+      })
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -47,6 +63,7 @@ export default function LoginPage() {
               <Label htmlFor="email">E-mail</Label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 placeholder="seu@email.com"
                 className="h-11 bg-secondary/50 border-border"
@@ -64,6 +81,7 @@ export default function LoginPage() {
               <div className="relative">
                 <Input
                   id="password"
+                  name="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="Sua senha"
                   className="h-11 bg-secondary/50 border-border pr-10"

@@ -1,91 +1,293 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Calendar } from "@/components/ui/calendar"
-import { ChevronLeft, ChevronRight, Clock, User } from "lucide-react"
-import { format, addMonths, subMonths, isSameDay } from "date-fns"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { ChevronLeft, ChevronRight, Clock, Plus, Loader2 } from "lucide-react"
+import { format, addMonths, subMonths, startOfMonth, endOfMonth } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import { useToast } from "@/hooks/use-toast"
+import {
+  getAdminAppointments,
+  getAppointmentsDatesWithActivity,
+  getAdminBookingResources,
+  createAdminAppointment,
+  type AdminAppointment,
+  type BookingResources,
+} from "@/lib/actions/appointments"
 
 const timeSlots = [
-  "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-  "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
-  "15:00", "15:30", "16:00", "16:30", "17:00", "17:30",
-  "18:00", "18:30", "19:00"
+  "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+  "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
+  "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00"
 ]
 
-interface DayAppointment {
-  id: number
-  client: string
-  service: string
-  time: string
-  duration: number
-  avatar: string
-}
-
-const appointmentsByDate: Record<string, DayAppointment[]> = {
-  "2024-01-15": [
-    { id: 1, client: "Pedro Almeida", service: "Corte + Barba", time: "09:00", duration: 60, avatar: "pedro" },
-    { id: 2, client: "Lucas Santos", service: "Corte", time: "11:00", duration: 45, avatar: "lucas" },
-    { id: 3, client: "Rafael Costa", service: "Barba", time: "14:00", duration: 30, avatar: "rafael" },
-  ],
-  "2024-01-16": [
-    { id: 4, client: "Marcos Oliveira", service: "Platinado", time: "10:00", duration: 120, avatar: "marcos" },
-    { id: 5, client: "Bruno Lima", service: "Corte", time: "15:00", duration: 45, avatar: "bruno" },
-  ],
-  "2024-01-17": [
-    { id: 6, client: "Fernando Souza", service: "Corte + Barba", time: "09:30", duration: 60, avatar: "fernando" },
-    { id: 7, client: "Carlos Silva", service: "Pigmentação", time: "13:00", duration: 90, avatar: "carlos" },
-    { id: 8, client: "André Pereira", service: "Corte", time: "16:00", duration: 45, avatar: "andre" },
-    { id: 9, client: "Paulo Santos", service: "Barba", time: "17:30", duration: 30, avatar: "paulo" },
-  ],
-}
-
 export default function CalendarioPage() {
+  const { toast } = useToast()
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
-  const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date())
 
-  const dateKey = format(selectedDate, "yyyy-MM-dd")
-  const selectedDayAppointments = appointmentsByDate[dateKey] || []
+  const [dayAppointments, setDayAppointments] = useState<AdminAppointment[]>([])
+  const [activeDates, setActiveDates] = useState<Date[]>([])
+  const [loadingDay, setLoadingDay] = useState(true)
 
-  // Highlight dates that have appointments
-  const appointmentDates = Object.keys(appointmentsByDate).map(date => new Date(date))
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [resources, setResources] = useState<BookingResources>({ barbers: [], services: [] })
+
+  const [newAppt, setNewAppt] = useState({
+    clientName: "",
+    clientPhone: "",
+    barberId: "",
+    serviceId: "",
+    date: "",
+    time: "",
+  })
+
+  // Carrega os agendamentos do dia selecionado
+  const loadDayAppointments = useCallback(async (date: Date) => {
+    setLoadingDay(true)
+    const dateStr = format(date, "yyyy-MM-dd")
+    const res = await getAdminAppointments(dateStr)
+    if (res.success) {
+      setDayAppointments(res.data.filter(a => a.status !== 'cancelled'))
+    } else {
+      toast({ title: "Erro ao carregar o dia", description: res.error, variant: "destructive" })
+    }
+    setLoadingDay(false)
+  }, [toast])
+
+  // Carrega as datas com atividade no mês selecionado
+  const loadMonthActivity = useCallback(async (month: Date) => {
+    const startStr = format(startOfMonth(month), "yyyy-MM-dd")
+    const endStr = format(endOfMonth(month), "yyyy-MM-dd")
+    const res = await getAppointmentsDatesWithActivity(startStr, endStr)
+    if (res.success) {
+      const dates = res.data.map(dStr => new Date(`${dStr}T12:00:00-03:00`))
+      setActiveDates(dates)
+    }
+  }, [])
+
+  // Carrega barbeiros e serviços para o formulário de novo agendamento
+  useEffect(() => {
+    async function loadRes() {
+      const res = await getAdminBookingResources()
+      if (res.success) {
+        setResources(res.data)
+      }
+    }
+    loadRes()
+  }, [])
+
+  useEffect(() => {
+    loadDayAppointments(selectedDate)
+  }, [selectedDate, loadDayAppointments])
+
+  useEffect(() => {
+    loadMonthActivity(currentMonth)
+  }, [currentMonth, loadMonthActivity])
+
+  const handleCreateAppointment = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newAppt.clientName || !newAppt.clientPhone || !newAppt.barberId || !newAppt.serviceId || !newAppt.date || !newAppt.time) {
+      toast({
+        title: "Campos em falta",
+        description: "Por favor, preencha todos os campos.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSubmitting(true)
+    const result = await createAdminAppointment(newAppt)
+    setIsSubmitting(false)
+
+    if (result.success) {
+      toast({
+        title: "Agendado!",
+        description: "Agendamento criado com sucesso.",
+      })
+      setIsDialogOpen(false)
+      setNewAppt({ clientName: "", clientPhone: "", barberId: "", serviceId: "", date: "", time: "" })
+      loadDayAppointments(selectedDate)
+      loadMonthActivity(currentMonth)
+    } else {
+      toast({
+        title: "Erro ao agendar",
+        description: result.error,
+        variant: "destructive",
+      })
+    }
+  }
 
   const getSlotStatus = (time: string) => {
-    const appointment = selectedDayAppointments.find(apt => apt.time === time)
+    const appointment = dayAppointments.find(apt => apt.time === time)
     if (appointment) {
       return { status: "booked", appointment }
     }
-    // Check if slot is within an appointment duration
-    const withinAppointment = selectedDayAppointments.find(apt => {
-      const aptStart = parseInt(apt.time.replace(":", ""))
-      const slotTime = parseInt(time.replace(":", ""))
-      const aptEnd = aptStart + (apt.duration / 60) * 100
+
+    // Verifica se o horário está dentro da duração de algum agendamento anterior
+    const withinAppointment = dayAppointments.find(apt => {
+      const [h, m] = apt.time.split(":").map(Number)
+      const aptStart = h * 60 + m
+      const [sh, sm] = time.split(":").map(Number)
+      const slotTime = sh * 60 + sm
+      const aptEnd = aptStart + apt.duration
       return slotTime > aptStart && slotTime < aptEnd
     })
+
     if (withinAppointment) {
       return { status: "occupied", appointment: withinAppointment }
     }
+
     return { status: "available", appointment: null }
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Calendário</h1>
-        <p className="text-muted-foreground">Visualize e gerencie sua agenda mensal</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Calendário</h1>
+          <p className="text-muted-foreground">Visualize e gerencie sua agenda mensal</p>
+        </div>
+        <Button className="gap-2" onClick={() => setIsDialogOpen(true)}>
+          <Plus className="size-4" />
+          Novo Agendamento
+        </Button>
       </div>
+
+      {/* Dialog for New Appointment */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>Novo Agendamento</DialogTitle>
+            <DialogDescription>
+              Preencha os dados para criar um novo agendamento manual no painel.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateAppointment} className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="client">Nome do Cliente</Label>
+              <Input
+                id="client"
+                placeholder="Ex: Pedro Almeida"
+                value={newAppt.clientName}
+                onChange={e => setNewAppt({ ...newAppt, clientName: e.target.value })}
+                className="bg-secondary/50 border-border"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Telefone</Label>
+              <Input
+                id="phone"
+                placeholder="Ex: (11) 99999-1234"
+                value={newAppt.clientPhone}
+                onChange={e => setNewAppt({ ...newAppt, clientPhone: e.target.value })}
+                className="bg-secondary/50 border-border"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="barber">Profissional</Label>
+              <Select
+                value={newAppt.barberId}
+                onValueChange={val => setNewAppt({ ...newAppt, barberId: val })}
+              >
+                <SelectTrigger className="bg-secondary/50 border-border">
+                  <SelectValue placeholder="Selecione o profissional" />
+                </SelectTrigger>
+                <SelectContent>
+                  {resources.barbers.map((b) => (
+                    <SelectItem key={b.id} value={b.id}>
+                      {b.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="service">Serviço</Label>
+              <Select
+                value={newAppt.serviceId}
+                onValueChange={val => setNewAppt({ ...newAppt, serviceId: val })}
+              >
+                <SelectTrigger className="bg-secondary/50 border-border">
+                  <SelectValue placeholder="Selecione o serviço" />
+                </SelectTrigger>
+                <SelectContent>
+                  {resources.services.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name} - {s.durationMinutes} min - R$ {s.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="date">Data</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={newAppt.date}
+                  onChange={e => setNewAppt({ ...newAppt, date: e.target.value })}
+                  className="bg-secondary/50 border-border text-foreground"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="time">Horário</Label>
+                <Input
+                  id="time"
+                  type="time"
+                  value={newAppt.time}
+                  onChange={e => setNewAppt({ ...newAppt, time: e.target.value })}
+                  className="bg-secondary/50 border-border text-foreground"
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter className="pt-4">
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
+                Agendar
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Calendar */}
         <Card className="lg:col-span-1 bg-card border-border">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-medium">
+              <CardTitle className="text-base font-medium capitalize">
                 {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
               </CardTitle>
               <div className="flex gap-1">
@@ -118,10 +320,10 @@ export default function CalendarioPage() {
               locale={ptBR}
               className="rounded-md"
               modifiers={{
-                hasAppointments: appointmentDates,
+                hasAppointments: activeDates,
               }}
               modifiersClassNames={{
-                hasAppointments: "bg-primary/20 text-primary font-semibold",
+                hasAppointments: "bg-primary/20 text-primary font-semibold border border-primary/30",
               }}
             />
           </CardContent>
@@ -132,104 +334,88 @@ export default function CalendarioPage() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-base font-medium">
+                <CardTitle className="text-base font-medium capitalize">
                   {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  {selectedDayAppointments.length} agendamento(s)
+                  {dayAppointments.length} agendamento(s) confirmado(s)
                 </p>
               </div>
-              <Button size="sm">Novo Agendamento</Button>
+              <Button size="sm" variant="outline" onClick={() => setIsDialogOpen(true)}>
+                + Agendar
+              </Button>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-1 max-h-[500px] overflow-y-auto pr-2">
-              {timeSlots.map((time) => {
-                const { status, appointment } = getSlotStatus(time)
-                
-                return (
-                  <div
-                    key={time}
-                    className={`flex items-stretch gap-3 p-2 rounded-lg transition-colors ${
-                      status === "booked"
-                        ? "bg-primary/10 border border-primary/20"
-                        : status === "occupied"
-                        ? "bg-secondary/30 opacity-50"
-                        : "hover:bg-secondary/30"
-                    }`}
-                  >
-                    <div className="w-14 shrink-0 text-sm font-mono text-muted-foreground pt-1">
-                      {time}
-                    </div>
-                    
-                    {status === "booked" && appointment ? (
-                      <div className="flex-1 flex items-center gap-3 p-2 rounded-md bg-background/50">
-                        <Avatar className="size-9">
-                          <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${appointment.avatar}`} />
-                          <AvatarFallback>{appointment.client[0]}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{appointment.client}</p>
-                          <p className="text-xs text-muted-foreground">{appointment.service}</p>
+            {loadingDay ? (
+              <div className="py-20 flex justify-center items-center gap-2 text-muted-foreground">
+                <Loader2 className="size-5 animate-spin" />
+                Carregando horários do dia...
+              </div>
+            ) : (
+              <div className="space-y-1 max-h-[500px] overflow-y-auto pr-2">
+                {timeSlots.map((time) => {
+                  const { status, appointment } = getSlotStatus(time)
+                  
+                  return (
+                    <div
+                      key={time}
+                      className={`flex items-stretch gap-3 p-2 rounded-lg transition-colors ${
+                        status === "booked"
+                          ? "bg-primary/10 border border-primary/20"
+                          : status === "occupied"
+                          ? "bg-secondary/30 opacity-50"
+                          : "hover:bg-secondary/30"
+                      }`}
+                    >
+                      <div className="w-14 shrink-0 text-sm font-mono text-muted-foreground pt-1">
+                        {time}
+                      </div>
+                      
+                      {status === "booked" && appointment ? (
+                        <div className="flex-1 flex items-center gap-3 p-2 rounded-md bg-background/50 border border-primary/20">
+                          <Avatar className="size-9">
+                            <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${appointment.avatar}`} />
+                            <AvatarFallback>{appointment.clientName[0]}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{appointment.clientName}</p>
+                            <p className="text-xs text-muted-foreground">{appointment.serviceName} • {appointment.barberName}</p>
+                          </div>
+                          <Badge variant="outline" className="shrink-0 text-xs">
+                            <Clock className="size-3 mr-1" />
+                            {appointment.duration}min
+                          </Badge>
                         </div>
-                        <Badge variant="outline" className="shrink-0 text-xs">
-                          <Clock className="size-3 mr-1" />
-                          {appointment.duration}min
-                        </Badge>
-                      </div>
-                    ) : status === "occupied" ? (
-                      <div className="flex-1 flex items-center justify-center border-l-2 border-primary/30 pl-3">
-                        <span className="text-xs text-muted-foreground">Em atendimento</span>
-                      </div>
-                    ) : (
-                      <div className="flex-1 flex items-center border border-dashed border-border rounded-md hover:border-primary/50 cursor-pointer transition-colors group">
-                        <span className="text-xs text-muted-foreground group-hover:text-primary mx-auto">
-                          Horário disponível
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+                      ) : status === "occupied" ? (
+                        <div className="flex-1 flex items-center justify-start border-l-2 border-primary/30 pl-3">
+                          <span className="text-xs text-muted-foreground">Em atendimento</span>
+                        </div>
+                      ) : (
+                        <div
+                          className="flex-1 flex items-center border border-dashed border-border rounded-md hover:border-primary/50 cursor-pointer transition-colors group py-1"
+                          onClick={() => {
+                            setNewAppt({
+                              ...newAppt,
+                              date: format(selectedDate, "yyyy-MM-dd"),
+                              time: time,
+                            })
+                            setIsDialogOpen(true)
+                          }}
+                        >
+                          <span className="text-xs text-muted-foreground group-hover:text-primary mx-auto">
+                            Horário disponível
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
-
-      {/* Weekly Overview */}
-      <Card className="bg-card border-border">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-medium">Resumo da Semana</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-7 gap-2">
-            {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((day, index) => {
-              const appointmentCount = Math.floor(Math.random() * 8)
-              const isFull = appointmentCount >= 6
-              const isToday = index === new Date().getDay()
-              
-              return (
-                <div
-                  key={day}
-                  className={`p-3 rounded-lg text-center transition-colors ${
-                    isToday 
-                      ? "bg-primary/20 border border-primary/30" 
-                      : "bg-secondary/30 hover:bg-secondary/50"
-                  }`}
-                >
-                  <p className="text-xs text-muted-foreground mb-1">{day}</p>
-                  <p className={`text-lg font-bold ${isFull ? "text-destructive" : isToday ? "text-primary" : ""}`}>
-                    {appointmentCount}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {isFull ? "Lotado" : "Livres"}
-                  </p>
-                </div>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }

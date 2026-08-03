@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { useBarberSettings } from "@/hooks/use-barber-settings"
 import { useToast } from "@/hooks/use-toast"
+import { getDashboardData, type DashboardData } from "@/lib/actions/dashboard"
 import {
   Calendar,
   DollarSign,
@@ -19,6 +20,7 @@ import {
   CheckCircle2,
   XCircle,
   Copy,
+  Loader2,
 } from "lucide-react"
 import {
   AreaChart,
@@ -32,52 +34,30 @@ import {
   Bar,
 } from "recharts"
 
-const revenueData = [
-  { name: "Seg", value: 320 },
-  { name: "Ter", value: 450 },
-  { name: "Qua", value: 380 },
-  { name: "Qui", value: 520 },
-  { name: "Sex", value: 680 },
-  { name: "Sáb", value: 890 },
-  { name: "Dom", value: 240 },
-]
-
-const servicesData = [
-  { name: "Corte", value: 45 },
-  { name: "Barba", value: 28 },
-  { name: "Combo", value: 35 },
-  { name: "Platinado", value: 12 },
-  { name: "Pigmentação", value: 8 },
-]
-
-const upcomingAppointments = [
-  { id: 1, client: "Pedro Almeida", service: "Corte + Barba", time: "09:00", avatar: "pedro" },
-  { id: 2, client: "Lucas Santos", service: "Corte Degradê", time: "09:45", avatar: "lucas" },
-  { id: 3, client: "Rafael Costa", service: "Platinado", time: "10:30", avatar: "rafael" },
-  { id: 4, client: "Marcos Oliveira", service: "Barba", time: "11:15", avatar: "marcos" },
-]
-
-const recentAppointments = [
-  { id: 1, client: "Carlos Silva", service: "Corte", time: "Ontem 15:30", status: "completed", value: 45 },
-  { id: 2, client: "André Pereira", service: "Combo", time: "Ontem 14:00", status: "completed", value: 65 },
-  { id: 3, client: "Bruno Lima", service: "Corte", time: "Ontem 13:15", status: "cancelled", value: 45 },
-  { id: 4, client: "Fernando Souza", service: "Barba", time: "Ontem 11:30", status: "completed", value: 35 },
-]
-
 export default function DashboardPage() {
   const { settings } = useBarberSettings()
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [data, setData] = useState<DashboardData | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     setMounted(true)
+    async function load() {
+      const res = await getDashboardData()
+      if (res) {
+        setData(res)
+      }
+      setLoading(false)
+    }
+    load()
   }, [])
 
   const getSchedulingLink = () => {
     if (typeof window === 'undefined') return ''
     const origin = window.location.origin
-    const cleanSlug = settings.slug || 'mk-barber'
+    const cleanSlug = data?.barbershop.slug || settings.slug || 'barbearia-exemplo'
     return `${origin}/agendar/${cleanSlug}`
   }
 
@@ -92,17 +72,33 @@ export default function DashboardPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  if (loading) {
+    return (
+      <div className="h-[60vh] flex items-center justify-center gap-2 text-muted-foreground">
+        <Loader2 className="size-5 animate-spin" />
+        Carregando dados do painel...
+      </div>
+    )
+  }
+
+  const barbershopName = data?.barbershop.name || settings.name || "Minha Barbearia"
+  const stats = data?.stats || { faturamentoHoje: 0, agendamentosHoje: 0, novosClientes: 0, taxaOcupacao: 0 }
+  const revenueData = data?.revenueData || []
+  const servicesData = data?.servicesData || []
+  const upcomingAppointments = data?.upcomingAppointments || []
+  const recentAppointments = data?.recentAppointments || []
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <h1 className="text-2xl font-bold">{barbershopName}</h1>
           <p className="text-muted-foreground">Visão geral do seu negócio</p>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Clock className="size-4" />
-          Atualizado há 5 minutos
+          Dados em tempo real
         </div>
       </div>
 
@@ -147,30 +143,30 @@ export default function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Faturamento Hoje"
-          value="R$ 1.280"
-          change="+12%"
+          value={`R$ ${stats.faturamentoHoje.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
+          change="Hoje"
           trend="up"
           icon={DollarSign}
         />
         <StatsCard
           title="Agendamentos Hoje"
-          value="14"
-          change="+3"
+          value={String(stats.agendamentosHoje)}
+          change="Confirmados"
           trend="up"
           icon={Calendar}
         />
         <StatsCard
-          title="Novos Clientes"
-          value="8"
-          change="+2"
+          title="Clientes Atendidos"
+          value={String(stats.novosClientes)}
+          change="Total geral"
           trend="up"
           icon={Users}
         />
         <StatsCard
           title="Taxa de Ocupação"
-          value="87%"
-          change="-5%"
-          trend="down"
+          value={`${stats.taxaOcupacao}%`}
+          change="Estimada"
+          trend="up"
           icon={TrendingUp}
         />
       </div>
@@ -183,7 +179,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-base font-medium">Faturamento Semanal</CardTitle>
-                <CardDescription>Últimos 7 dias</CardDescription>
+                <CardDescription>Últimos 7 dias (R$)</CardDescription>
               </div>
               <Button variant="ghost" size="icon">
                 <MoreHorizontal className="size-4" />
@@ -305,25 +301,29 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {upcomingAppointments.map((appointment) => (
-              <div
-                key={appointment.id}
-                className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
-              >
-                <Avatar className="size-10">
-                  <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${appointment.avatar}`} />
-                  <AvatarFallback>{appointment.client[0]}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{appointment.client}</p>
-                  <p className="text-xs text-muted-foreground">{appointment.service}</p>
+            {upcomingAppointments.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">Nenhum agendamento para hoje.</p>
+            ) : (
+              upcomingAppointments.map((appointment) => (
+                <div
+                  key={appointment.id}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                >
+                  <Avatar className="size-10">
+                    <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${appointment.avatar}`} />
+                    <AvatarFallback>{appointment.client[0]}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{appointment.client}</p>
+                    <p className="text-xs text-muted-foreground">{appointment.service}</p>
+                  </div>
+                  <Badge variant="outline" className="shrink-0">
+                    <Clock className="size-3 mr-1" />
+                    {appointment.time}
+                  </Badge>
                 </div>
-                <Badge variant="outline" className="shrink-0">
-                  <Clock className="size-3 mr-1" />
-                  {appointment.time}
-                </Badge>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
 
@@ -339,32 +339,36 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {recentAppointments.map((appointment) => (
-              <div
-                key={appointment.id}
-                className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30"
-              >
-                {appointment.status === "completed" ? (
-                  <div className="size-8 rounded-full bg-green-500/10 flex items-center justify-center">
-                    <CheckCircle2 className="size-4 text-green-500" />
+            {recentAppointments.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">Nenhuma atividade recente.</p>
+            ) : (
+              recentAppointments.map((appointment) => (
+                <div
+                  key={appointment.id}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30"
+                >
+                  {appointment.status === "confirmed" ? (
+                    <div className="size-8 rounded-full bg-green-500/10 flex items-center justify-center">
+                      <CheckCircle2 className="size-4 text-green-500" />
+                    </div>
+                  ) : (
+                    <div className="size-8 rounded-full bg-destructive/10 flex items-center justify-center">
+                      <XCircle className="size-4 text-destructive" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm truncate">{appointment.client}</p>
+                      {appointment.status === "cancelled" && (
+                        <Badge variant="destructive" className="text-[10px] h-4">Cancelado</Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{appointment.service} • {appointment.time}</p>
                   </div>
-                ) : (
-                  <div className="size-8 rounded-full bg-destructive/10 flex items-center justify-center">
-                    <XCircle className="size-4 text-destructive" />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-sm truncate">{appointment.client}</p>
-                    {appointment.status === "cancelled" && (
-                      <Badge variant="destructive" className="text-[10px] h-4">Cancelado</Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">{appointment.service} • {appointment.time}</p>
+                  <span className="font-medium text-sm text-primary">R$ {appointment.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                 </div>
-                <span className="font-medium text-sm text-primary">R$ {appointment.value}</span>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
       </div>

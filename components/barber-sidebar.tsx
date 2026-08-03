@@ -37,11 +37,14 @@ import {
   ChevronUp,
   BarChart3,
   User,
+  ListOrdered,
 } from "lucide-react"
+import { logout } from "@/lib/actions/auth"
 
 const menuItems = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Agenda", href: "/dashboard/agenda", icon: Calendar },
+  { title: "Todos Agendamentos", href: "/dashboard/todos-agendamentos", icon: ListOrdered },
   { title: "Calendário", href: "/dashboard/calendario", icon: CalendarDays },
   { title: "Clientes", href: "/dashboard/clientes", icon: Users },
   { title: "Relatórios", href: "/dashboard/relatorios", icon: BarChart3 },
@@ -164,11 +167,14 @@ export function BarberSidebar() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild className="text-destructive">
-              <Link href="/login">
-                <LogOut className="size-4 mr-2" />
-                Sair
-              </Link>
+            <DropdownMenuItem
+              className="text-destructive cursor-pointer"
+              onClick={async () => {
+                await logout()
+              }}
+            >
+              <LogOut className="size-4 mr-2" />
+              Sair
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
