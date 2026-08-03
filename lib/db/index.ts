@@ -12,6 +12,10 @@ const client =
     // Supabase suporta até 15 conexões no plano free com pgBouncer.
     // Ajuste conforme o plano/camada de conexão utilizada.
     max: 10,
+    // SSL obrigatório para conexões com Supabase.
+    ssl: 'require',
+    // Desabilita prepared statements — necessário com connection pooler (PgBouncer).
+    prepare: false,
   })
 
 if (process.env.NODE_ENV !== 'production') {

@@ -8,7 +8,7 @@ import type {
   availabilityExceptions,
   blockedSlots,
   appointments,
-} from './schema'
+} from './index'
 
 // -----------------------------------------------------------
 // Select types — usados em queries de leitura

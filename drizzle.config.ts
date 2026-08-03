@@ -2,10 +2,10 @@ import { defineConfig } from 'drizzle-kit'
 
 export default defineConfig({
   // Ponto de entrada do schema — drizzle-kit lê todas as exportações
-  schema: './src/lib/db/schema/index.ts',
+  schema: './lib/db/schema/index.ts', // Caminho corrigido (sem src/)
 
   // Diretório onde as migrations serão geradas
-  out: './src/lib/db/migrations',
+  out: './lib/db/migrations',
 
   dialect: 'postgresql',
 
