@@ -14,16 +14,29 @@ export function NotificationsPopover() {
   const [loading, setLoading] = useState(false)
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
+  const [viewedNotifs, setViewedNotifs] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem('trimly_viewed_notifs')
+      if (saved) {
+        try { setViewedNotifs(new Set(JSON.parse(saved))) } catch (e) {}
+      }
+    }
+  }, [])
 
   const loadNotifications = useCallback(async () => {
     setLoading(true)
     const result = await getRecentNotifications()
     if (result.success) {
       setNotifications(result.data)
-      setUnreadCount(result.data.filter(n => n.status === "confirmed" || n.status === "pending").length)
+      const unread = result.data.filter(n => 
+        (n.status === "confirmed" || n.status === "pending") && !viewedNotifs.has(n.id)
+      )
+      setUnreadCount(unread.length)
     }
     setLoading(false)
-  }, [])
+  }, [viewedNotifs])
 
   useEffect(() => {
     loadNotifications()
@@ -32,8 +45,23 @@ export function NotificationsPopover() {
     return () => clearInterval(interval)
   }, [loadNotifications])
 
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen)
+    if (isOpen && unreadCount > 0) {
+      setViewedNotifs(prev => {
+        const next = new Set(prev)
+        notifications.forEach(n => next.add(n.id))
+        if (typeof window !== "undefined") {
+          localStorage.setItem('trimly_viewed_notifs', JSON.stringify(Array.from(next)))
+        }
+        return next
+      })
+      setUnreadCount(0)
+    }
+  }
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative shrink-0">
           <Bell className="size-4 text-muted-foreground hover:text-foreground transition-colors" />

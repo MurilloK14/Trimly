@@ -16,23 +16,32 @@ import {
   Shield, 
   Clock,
   Sparkles,
-  Scissors
+  Scissors,
+  Link2,
+  Palette,
+  Bell
 } from "lucide-react"
 
 function ProductDemoSlider() {
   const [activeSlide, setActiveSlide] = useState(0)
   const slides = [
     {
-      title: "Agendamento Sem Atrito",
-      description: "Interface intuitiva onde seus clientes agendam serviços 24/7 de forma rápida e elegante.",
-      image: "/scheduling_demo.png", // Fallback, could be generated
-      tag: "Experiência do Cliente"
-    },
-    {
       title: "Controle Total na sua Mão",
       description: "Métricas de faturamento, ocupação, gestão de equipe e agenda unificada em um único painel.",
-      image: "/dashboard_demo.png", // Fallback, could be generated
+      image: "/dashboard_demo.jpg",
       tag: "Gestão Avançada"
+    },
+    {
+      title: "Confirmação Instantânea",
+      description: "Finalização clara e profissional, passando credibilidade imediata ao seu cliente.",
+      image: "/confirmation_demo.jpg",
+      tag: "Credibilidade"
+    },
+    {
+      title: "Agendamento Sem Atrito",
+      description: "Interface intuitiva onde tanto você quanto seus clientes agendam serviços 24/7 de forma rápida e elegante.",
+      image: "/scheduling_demo.jpg",
+      tag: "Experiência do Cliente"
     }
   ]
 
@@ -100,7 +109,7 @@ function ProductDemoSlider() {
               <img
                 src={slide.image}
                 alt={slide.title}
-                className="w-full h-full object-cover object-top relative z-10 shadow-2xl"
+                className="w-full h-full object-cover object-center relative z-10 shadow-2xl"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                   e.currentTarget.parentElement?.classList.add('bg-grid-white/[0.02]');
@@ -226,7 +235,7 @@ export default function HomePage() {
             <FeatureCard 
               icon={Calendar} 
               title="Agendamento Inteligente" 
-              description="Seus clientes agendam 24/7 sem atritos. A agenda se otimiza sozinha para maximizar seu tempo." 
+              description="Tanto o barbeiro quanto os clientes agendam 24/7 sem atritos. A agenda se otimiza sozinha para maximizar seu tempo." 
             />
             <FeatureCard 
               icon={Users} 
@@ -234,10 +243,58 @@ export default function HomePage() {
               description="Histórico de cortes, preferências e frequência. Conheça seu cliente como nunca antes." 
             />
             <FeatureCard 
-              icon={BarChart3} 
-              title="Analytics Financeiro" 
-              description="Faturamento, ticket médio e taxa de ocupação em dashboards visuais e diretos ao ponto." 
+              icon={Bell} 
+              title="Notificações em Tempo Real" 
+              description="Saiba instantaneamente quando um novo cliente agendar ou cancelar, direto no seu painel." 
             />
+          </div>
+        </section>
+
+        {/* Marketing Bonus Section */}
+        <section className="container mx-auto px-6 mt-32">
+          <div className="relative rounded-3xl border border-primary/40 bg-card/60 backdrop-blur-xl p-8 md:p-12 overflow-hidden shadow-[0_0_50px_rgba(201,138,91,0.15)] group hover:shadow-[0_0_80px_rgba(201,138,91,0.25)] transition-all">
+            {/* Glowing Effects */}
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-primary/20 rounded-full blur-[120px] pointer-events-none group-hover:bg-primary/30 transition-colors"></div>
+            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-accent/20 rounded-full blur-[100px] pointer-events-none"></div>
+            
+            <div className="relative z-10 flex flex-col md:flex-row gap-12 items-center">
+              <div className="flex-1 space-y-6">
+                <Badge variant="outline" className="border-primary/50 text-primary uppercase tracking-widest text-[10px] bg-primary/10 px-3 py-1 animate-pulse">
+                  Bônus Exclusivo de Lançamento
+                </Badge>
+                <h2 className="text-3xl md:text-5xl font-bold tracking-tight leading-tight">
+                  Melhore e automatize <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">seu negócio</span>
+                </h2>
+                <p className="text-lg text-muted-foreground leading-relaxed">
+                  Além do melhor sistema de agendamento, liberamos ferramentas premium para você ter controle total da sua barbearia.
+                </p>
+                <div className="flex gap-4 pt-4">
+                  <Link href="/assinar">
+                    <Button size="lg" className="h-12 px-8 rounded-full shadow-[0_0_20px_rgba(201,138,91,0.3)]">
+                      Garantir Meu Bônus
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+              
+              <div className="flex-1 w-full flex flex-col gap-4">
+                <BonusCard 
+                  icon={BarChart3}
+                  title="Controle Financeiro Total"
+                  description="Faturamento, ticket médio e taxa de ocupação em dashboards visuais."
+                />
+                <BonusCard 
+                  icon={Link2}
+                  title="Link Próprio Exclusivo"
+                  description="Sua barbearia, suas regras. Tenha um link de agendamento personalizado."
+                />
+                <BonusCard 
+                  icon={Palette}
+                  title="Personalização Total"
+                  description="Adapte o visual do sistema para ter a identidade única da sua marca."
+                />
+              </div>
+            </div>
           </div>
         </section>
 
@@ -322,6 +379,20 @@ function PricingFeature({ text }: { text: string }) {
         <CheckCircle2 className="size-3.5 text-green-500" />
       </div>
       <span className="text-muted-foreground">{text}</span>
+    </div>
+  )
+}
+
+function BonusCard({ icon: Icon, title, description }: { icon: React.ElementType; title: string; description: string }) {
+  return (
+    <div className="flex items-start gap-4 p-5 rounded-2xl bg-black/40 border border-white/5 hover:border-primary/30 transition-all group">
+      <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+        <Icon className="size-5 text-primary" />
+      </div>
+      <div>
+        <h4 className="font-bold text-foreground mb-1">{title}</h4>
+        <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+      </div>
     </div>
   )
 }
