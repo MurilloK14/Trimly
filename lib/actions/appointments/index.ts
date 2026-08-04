@@ -291,3 +291,55 @@ export async function getAllAdminAppointments(
   }
 }
 
+export interface NotificationItem {
+  id: string
+  clientName: string
+  serviceName: string
+  barberName: string
+  dateFormatted: string
+  time: string
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled'
+  createdAtFormatted: string
+}
+
+// Retorna os últimos 5 agendamentos realizados para exibir no sino de notificações
+export async function getRecentNotifications(): Promise<ActionResult<NotificationItem[]>> {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'Não autorizado' }
+
+    const shop = await db.query.barbershops.findFirst({
+      where: and(eq(barbershops.ownerId, user.id), eq(barbershops.active, true)),
+    })
+    if (!shop) return { success: false, error: 'Barbearia não encontrada' }
+
+    const rows = await db.query.appointments.findMany({
+      where: eq(appointments.barbershopId, shop.id),
+      with: {
+        barber: true,
+        service: true,
+      },
+      orderBy: (a, { desc }) => [desc(a.createdAt)],
+      limit: 6,
+    })
+
+    const data: NotificationItem[] = rows.map(r => ({
+      id: r.id,
+      clientName: r.clientName,
+      serviceName: r.service?.name || 'Serviço',
+      barberName: r.barber?.name || 'Barbeiro',
+      dateFormatted: format(r.startsAt, 'dd/MM'),
+      time: format(r.startsAt, 'HH:mm'),
+      status: r.status as any,
+      createdAtFormatted: format(r.createdAt, 'dd/MM - HH:mm'),
+    }))
+
+    return { success: true, data }
+  } catch (err) {
+    console.error('[getRecentNotifications]', err)
+    return { success: false, error: 'Erro ao carregar notificações' }
+  }
+}
+
+

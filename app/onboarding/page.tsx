@@ -19,6 +19,8 @@ import {
   EyeOff,
   CheckCircle2
 } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { compressAndValidateImage } from "@/lib/utils/image-compression"
 
 interface FormData {
   senha: string
@@ -31,6 +33,7 @@ interface FormData {
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -56,15 +59,17 @@ export default function OnboardingPage() {
     }
   }
 
-  const handleImageUpload = (field: "fotoBarbearia" | "fotoBarbeiro", e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (field: "fotoBarbearia" | "fotoBarbeiro", e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, [field]: reader.result as string }))
-      }
-      reader.readAsDataURL(file)
+    if (!file) return
+
+    const result = await compressAndValidateImage(file, { maxSizeMB: 2, maxWidth: 500, maxHeight: 500 })
+    if (!result.success) {
+      toast({ title: "Arquivo inválido", description: result.error, variant: "destructive" })
+      return
     }
+
+    setFormData(prev => ({ ...prev, [field]: result.dataUrl }))
   }
 
   const validateForm = () => {

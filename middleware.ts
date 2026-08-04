@@ -38,13 +38,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Se o usuário estiver logado e tentar acessar /login
-  if (request.nextUrl.pathname.startsWith('/login') && user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
-  }
-
   return supabaseResponse
 }
 

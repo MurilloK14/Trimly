@@ -40,6 +40,7 @@ import {
   ListOrdered,
 } from "lucide-react"
 import { logout } from "@/lib/actions/auth"
+import { getSidebarUser } from "@/lib/actions/auth/user"
 
 const menuItems = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -59,9 +60,17 @@ export function BarberSidebar() {
   const pathname = usePathname()
   const { settings } = useBarberSettings()
   const [mounted, setMounted] = useState(false)
+  const [sidebarEmail, setSidebarEmail] = useState("")
+  const [sidebarShopName, setSidebarShopName] = useState("")
 
   useEffect(() => {
     setMounted(true)
+    getSidebarUser().then(result => {
+      if (result.success) {
+        setSidebarEmail(result.data.email)
+        setSidebarShopName(result.data.barbershopName)
+      }
+    })
   }, [])
 
   return (
@@ -149,14 +158,14 @@ export function BarberSidebar() {
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-3 p-2 w-full rounded-lg hover:bg-sidebar-accent transition-colors">
               <Avatar className="size-9">
-                <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=barber" />
-                <AvatarFallback>JD</AvatarFallback>
+                <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${sidebarEmail}`} />
+                <AvatarFallback>{(settings.name || sidebarShopName || "B")[0].toUpperCase()}</AvatarFallback>
               </Avatar>
-              <div className="flex-1 text-left">
-                <div className="text-sm font-semibold">João da Silva</div>
-                <div className="text-xs text-muted-foreground">Barbeiro</div>
+              <div className="flex-1 text-left min-w-0">
+                <div className="text-sm font-semibold truncate">{settings.name || sidebarShopName || "Minha Barbearia"}</div>
+                <div className="text-xs text-muted-foreground truncate">{sidebarEmail}</div>
               </div>
-              <ChevronUp className="size-4 text-muted-foreground" />
+              <ChevronUp className="size-4 text-muted-foreground shrink-0" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
