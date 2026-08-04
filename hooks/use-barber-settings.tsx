@@ -6,11 +6,12 @@ import type { Barbershop } from "@/lib/db/db"
 
 export const DEFAULT_BARBERSHOP = (id: string = "default-shop-id"): Barbershop => ({
   id,
-  name: "MK Barber",
+  name: "Trimly",
   slug: "mk-barber",
   logo_type: "preset",
   logo_preset: "vintage-gold",
   logo_custom: "",
+  logo_position: "center",
   created_at: new Date().toISOString(),
 })
 
@@ -95,6 +96,7 @@ export function useBarberSettings(slug?: string) {
             logo_type: "preset",
             logo_preset: "vintage-gold",
             logo_custom: "",
+            logo_position: "center",
             created_at: new Date().toISOString(),
           })
         }

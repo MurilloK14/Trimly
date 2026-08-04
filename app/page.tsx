@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { 
   Calendar, 
   Users, 
@@ -12,257 +14,289 @@ import {
   CheckCircle2, 
   Zap, 
   Shield, 
-  Clock
+  Clock,
+  Sparkles,
+  Scissors
 } from "lucide-react"
 
 function ProductDemoSlider() {
   const [activeSlide, setActiveSlide] = useState(0)
   const slides = [
     {
-      title: "Área de Agendamento do Cliente",
-      description: "Uma interface intuitiva e personalizada com o nome e logotipo da sua barbearia. Seus clientes agendam serviços 24/7 sem atritos.",
-      image: "/scheduling_demo.png",
-      tag: "Visão do Cliente"
+      title: "Agendamento Sem Atrito",
+      description: "Interface intuitiva onde seus clientes agendam serviços 24/7 de forma rápida e elegante.",
+      image: "/scheduling_demo.png", // Fallback, could be generated
+      tag: "Experiência do Cliente"
     },
     {
-      title: "Painel de Gestão do Barbeiro",
-      description: "Controle de faturamento, relatórios de ocupação, metas, gestão de profissionais e visualização de agenda em tempo real.",
-      image: "/dashboard_demo.png",
-      tag: "Visão do Administrador"
+      title: "Controle Total na sua Mão",
+      description: "Métricas de faturamento, ocupação, gestão de equipe e agenda unificada em um único painel.",
+      image: "/dashboard_demo.png", // Fallback, could be generated
+      tag: "Gestão Avançada"
     }
   ]
 
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveSlide((prev) => (prev + 1) % slides.length)
-    }, 4500)
+    }, 5000)
     return () => clearInterval(interval)
   }, [slides.length])
 
   return (
-    <div className="mt-16 max-w-5xl mx-auto space-y-6">
-      {/* Dynamic Slide Details */}
-      <div className="text-center max-w-xl mx-auto space-y-2 px-4">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wider">
-          {slides[activeSlide].tag}
-        </span>
-        <h3 className="text-xl md:text-2xl font-bold tracking-tight text-foreground transition-all duration-300">{slides[activeSlide].title}</h3>
-        <p className="text-sm text-muted-foreground leading-relaxed transition-all duration-300">{slides[activeSlide].description}</p>
+    <div className="mt-20 max-w-5xl mx-auto space-y-8">
+      <div className="text-center max-w-2xl mx-auto space-y-4 px-4">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeSlide}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.4 }}
+            className="space-y-3"
+          >
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/15 text-primary text-[10px] font-bold uppercase tracking-widest border border-primary/20 shadow-[0_0_15px_rgba(201,138,91,0.2)]">
+              {slides[activeSlide].tag}
+            </span>
+            <h3 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">{slides[activeSlide].title}</h3>
+            <p className="text-base text-muted-foreground leading-relaxed">{slides[activeSlide].description}</p>
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       {/* Premium Browser Mockup Container */}
-      <div className="relative rounded-2xl border border-border/80 bg-card/60 backdrop-blur-md p-2 shadow-[0_20px_50px_rgba(202,163,74,0.12)] overflow-hidden group">
-        {/* Browser Top bar decoration */}
-        <div className="flex items-center justify-between px-3 py-2 border-b border-border/50 bg-muted/20">
-          <div className="flex gap-1.5">
-            <span className="size-3 rounded-full bg-red-500/80" />
-            <span className="size-3 rounded-full bg-yellow-500/80" />
-            <span className="size-3 rounded-full bg-green-500/80" />
+      <motion.div 
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, delay: 0.2 }}
+        className="relative rounded-2xl border border-white/10 bg-card/40 backdrop-blur-xl p-2 shadow-2xl shadow-black overflow-hidden group"
+      >
+        <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-transparent opacity-50"></div>
+        
+        {/* Browser Top bar */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-black/40 rounded-t-xl relative z-10">
+          <div className="flex gap-2">
+            <span className="size-3 rounded-full bg-red-500/80 shadow-sm" />
+            <span className="size-3 rounded-full bg-yellow-500/80 shadow-sm" />
+            <span className="size-3 rounded-full bg-green-500/80 shadow-sm" />
           </div>
-          <div className="flex items-center gap-1.5 bg-background/50 border border-border/50 rounded px-16 py-0.5 text-[10px] text-muted-foreground font-mono select-none">
-            {activeSlide === 0 ? "mkbarber.com/agendar" : "mkbarber.com/dashboard"}
+          <div className="flex items-center justify-center bg-black/50 border border-white/10 rounded-md px-6 py-1 text-[11px] text-muted-foreground font-mono select-none w-1/3">
+            <span className="opacity-50">https://</span>trimly.com.br
           </div>
-          <div className="w-12" /> {/* spacer */}
+          <div className="w-16" /> {/* spacer */}
         </div>
 
         {/* Slide Image Box */}
-        <div className="relative aspect-[16/10] w-full overflow-hidden bg-background rounded-b-lg">
+        <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#0A0A0A] rounded-b-xl border-t border-white/5">
           {slides.map((slide, index) => (
             <div
               key={index}
-              className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
-                index === activeSlide ? "opacity-100 scale-100 z-10" : "opacity-0 scale-95 z-0"
+              className={`absolute inset-0 transition-all duration-1000 ease-in-out flex items-center justify-center ${
+                index === activeSlide ? "opacity-100 scale-100 z-10" : "opacity-0 scale-105 z-0"
               }`}
             >
+              {/* Fake UI placeholders in case images don't load, looking premium */}
+              <div className="absolute inset-0 bg-gradient-to-br from-card to-background p-8 opacity-20"></div>
               <img
                 src={slide.image}
                 alt={slide.title}
-                className="w-full h-full object-cover object-top"
+                className="w-full h-full object-cover object-top relative z-10 shadow-2xl"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.parentElement?.classList.add('bg-grid-white/[0.02]');
+                }}
               />
             </div>
           ))}
         </div>
 
         {/* Navigation Dots */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2.5 bg-black/60 backdrop-blur px-3 py-1.5 rounded-full border border-white/10">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-3 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-xl">
           {slides.map((_, index) => (
             <button
               key={index}
               onClick={() => setActiveSlide(index)}
-              className={`size-2 rounded-full transition-all duration-300 ${
-                index === activeSlide ? "bg-primary w-6" : "bg-white/40 hover:bg-white/70"
+              className={`h-2 rounded-full transition-all duration-500 ${
+                index === activeSlide ? "bg-primary w-8 shadow-[0_0_10px_rgba(201,138,91,0.8)]" : "bg-white/30 w-2 hover:bg-white/60"
               }`}
             />
           ))}
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background selection:bg-primary/30 selection:text-primary-foreground relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute top-0 inset-x-0 h-[500px] bg-gradient-to-b from-primary/10 via-transparent to-transparent opacity-60 pointer-events-none blur-3xl"></div>
+      <div className="absolute -top-[300px] -right-[300px] size-[600px] rounded-full bg-primary/5 blur-[120px] pointer-events-none"></div>
+      <div className="absolute top-[40%] -left-[200px] size-[400px] rounded-full bg-accent/5 blur-[100px] pointer-events-none"></div>
+
       {/* Header */}
-      <header className="border-b border-border/40 backdrop-blur-sm fixed top-0 left-0 right-0 z-50 bg-background/80">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <Image src="/logo.png" alt="MK Barber" width={40} height={40} className="object-contain" />
-            <span style={{ fontFamily: "var(--font-rye)" }} className="text-lg text-primary">MK Barber</span>
+      <header className="fixed top-0 left-0 right-0 z-50 bg-background/60 backdrop-blur-xl border-b border-white/5 transition-all duration-300">
+        <div className="container mx-auto px-6 h-20 flex items-center justify-between">
+          <Link href="/" className="flex items-center">
+            <Image src="/logo.png" alt="Trimly" width={240} height={60} className="object-contain" priority />
           </Link>
           <nav className="hidden md:flex items-center gap-8">
-            <Link href="#funcionalidades" className="font-playfair text-sm text-muted-foreground hover:text-foreground transition-colors">Funcionalidades</Link>
-            <Link href="#beneficios" className="font-playfair text-sm text-muted-foreground hover:text-foreground transition-colors">Benefícios</Link>
-            <Link href="#preco" className="font-playfair text-sm text-muted-foreground hover:text-foreground transition-colors">Preço</Link>
+            <Link href="#funcionalidades" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Funcionalidades</Link>
+            <Link href="#beneficios" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Vantagens</Link>
+            <Link href="#preco" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Planos</Link>
           </nav>
-          <div className="flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost" size="sm" className="font-playfair">Já sou assinante</Button>
+          <div className="flex items-center gap-4">
+            <Link href="/login" className="hidden sm:block">
+              <Button variant="ghost" className="font-medium">Entrar</Button>
             </Link>
             <Link href="/assinar">
-              <Button size="sm" className="gap-2">
-                Comece Agora <ArrowRight className="size-3" />
+              <Button className="gap-2 shadow-lg shadow-primary/20 rounded-full px-6">
+                Assinar Agora <ArrowRight className="size-4" />
               </Button>
             </Link>
           </div>
         </div>
       </header>
 
-      {/* Hero */}
-      <main className="pt-32 pb-20">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="flex justify-center mb-8">
-              <Image 
-                src="/logo.png" 
-                alt="MK Barber" 
-                width={150} 
-                height={150}
-                className="object-contain drop-shadow-[0_0_20px_rgba(202,163,74,0.3)]"
-              />
-            </div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm mb-6 font-playfair italic">
-              <span className="size-1.5 rounded-full bg-primary animate-pulse" />
-              Acelere as vendas e simplifique a agenda da sua barbearia
-            </div>
+      <main className="pt-32 pb-24 relative z-10">
+        {/* Hero Section */}
+        <section className="container mx-auto px-6 pt-12 md:pt-20">
+          <div className="max-w-4xl mx-auto text-center space-y-8">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm mb-4 backdrop-blur-sm"
+            >
+              <Sparkles className="size-4 text-primary" />
+              <span className="text-muted-foreground">O novo padrão em gestão para barbearias</span>
+            </motion.div>
 
-            {/* H1 — focado em faturamento e vendas para donos de barbearia */}
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-3">
-              Aumente o faturamento da sua barbearia com{" "}
-              <span style={{ fontFamily: "var(--font-rye)" }} className="text-primary block mt-1">
-                agendamento automático
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.1]"
+            >
+              Agendamento perfeito, <br className="hidden md:block" />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
+                gestão implacável.
               </span>
-            </h1>
+            </motion.h1>
 
-            <p className="font-playfair text-lg text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
-              Diga adeus ao WhatsApp lotado. Ofereça uma página de agendamento exclusiva com a sua marca e gerencie seu time, faturamento e clientes em um painel inteligente.
-            </p>
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed"
+            >
+              Esqueça o caos do WhatsApp. Ofereça uma experiência premium de agendamento para seus clientes e assuma o controle total do seu negócio em um único lugar.
+            </motion.p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="flex flex-col sm:flex-row gap-4 justify-center pt-4"
+            >
               <Link href="/assinar">
-                <Button size="lg" className="gap-2 w-full sm:w-auto text-base px-8 py-6">
-                  Começar a Vender Mais <ArrowRight className="size-4" />
+                <Button size="lg" className="w-full sm:w-auto text-base px-8 h-14 rounded-full shadow-[0_0_30px_rgba(201,138,91,0.3)] hover:shadow-[0_0_40px_rgba(201,138,91,0.4)] transition-all">
+                  Começar a Vender Mais
                 </Button>
               </Link>
-            </div>
-            <p className="font-playfair text-sm text-muted-foreground italic">
-              Modernize seu negócio hoje mesmo por apenas R$ 49/mês
-            </p>
+              <Link href="#funcionalidades">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto text-base px-8 h-14 rounded-full border-white/10 hover:bg-white/5">
+                  Conhecer a Plataforma
+                </Button>
+              </Link>
+            </motion.div>
 
-            {/* Automatic Slide demonstration */}
             <ProductDemoSlider />
           </div>
+        </section>
 
-          {/* Features Grid */}
-          <div className="grid md:grid-cols-3 gap-6 mt-24" id="funcionalidades">
-            <FeatureCard icon={Calendar} title="Agendamento Online" description="Seus clientes agendam 24/7. Você gerencia tudo em tempo real." />
-            <FeatureCard icon={Users} title="Gestão de Clientes" description="Histórico completo, preferências e fidelização automática." />
-            <FeatureCard icon={BarChart3} title="Relatórios Inteligentes" description="Métricas de desempenho e insights para crescer seu negócio." />
+        {/* Features Grid */}
+        <section id="funcionalidades" className="container mx-auto px-6 mt-32">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">Tudo desenhado para sua escala</h2>
+            <p className="text-muted-foreground">Funcionalidades poderosas escondidas atrás de uma interface incrivelmente simples e elegante.</p>
           </div>
-
-          {/* Benefits */}
-          <div className="mt-24" id="beneficios">
-            <h2 className="text-2xl md:text-4xl font-bold text-center mb-4" style={{ fontFamily: "var(--font-rye)" }}>
-              Por que escolher o MK Barber?
-            </h2>
-            <p className="font-playfair text-muted-foreground text-center italic mb-12 max-w-xl mx-auto">
-              Tudo que você precisa para gerenciar sua barbearia em um único lugar
-            </p>
-            <div className="grid md:grid-cols-2 gap-4 max-w-3xl mx-auto">
-              <BenefitItem icon={Clock} text="Reduza faltas com lembretes automáticos" />
-              <BenefitItem icon={Users} text="Múltiplos barbeiros em uma só conta" />
-              <BenefitItem icon={Zap} text="Interface rápida e fácil de usar" />
-              <BenefitItem icon={Shield} text="Seus dados sempre seguros" />
-            </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            <FeatureCard 
+              icon={Calendar} 
+              title="Agendamento Inteligente" 
+              description="Seus clientes agendam 24/7 sem atritos. A agenda se otimiza sozinha para maximizar seu tempo." 
+            />
+            <FeatureCard 
+              icon={Users} 
+              title="Gestão de Clientes CRM" 
+              description="Histórico de cortes, preferências e frequência. Conheça seu cliente como nunca antes." 
+            />
+            <FeatureCard 
+              icon={BarChart3} 
+              title="Analytics Financeiro" 
+              description="Faturamento, ticket médio e taxa de ocupação em dashboards visuais e diretos ao ponto." 
+            />
           </div>
+        </section>
 
-          {/* Pricing */}
-          <div className="mt-24" id="preco">
-            <h2 className="text-2xl md:text-4xl font-bold text-center mb-4" style={{ fontFamily: "var(--font-rye)" }}>
-              Plano simples e acessível
-            </h2>
-            <p className="font-playfair text-muted-foreground text-center italic mb-12 max-w-xl mx-auto">
-              Sem surpresas. Um único plano com todas as funcionalidades.
-            </p>
-            <div className="max-w-md mx-auto">
-              <div className="p-8 rounded-2xl bg-card border border-border relative overflow-hidden">
-                <div className="absolute top-0 right-0 px-3 py-1 bg-primary text-primary-foreground text-xs font-medium rounded-bl-lg">
-                  Mensal
-                </div>
-                <div className="text-center mb-6">
-                  <h3 className="font-playfair text-xl font-semibold mb-2">MK Barber Completo</h3>
-                  <div className="flex items-baseline justify-center gap-1">
-                    <span className="text-5xl text-primary font-bold" style={{ fontFamily: "var(--font-rye)" }}>R$ 49</span>
-                    <span className="font-playfair text-muted-foreground">/mês</span>
-                  </div>
-                </div>
-                <div className="space-y-3 mb-8">
-                  <PricingFeature text="Agendamentos ilimitados" />
-                  <PricingFeature text="Gestão de clientes" />
-                  <PricingFeature text="Calendário inteligente" />
-                  <PricingFeature text="Relatórios completos" />
-                  <PricingFeature text="Suporte prioritário" />
-                  <PricingFeature text="Página de agendamento personalizada" />
-                </div>
-                <Link href="/assinar" className="block">
-                  <Button size="lg" className="w-full gap-2">
-                    Comece Agora <ArrowRight className="size-4" />
+        {/* Pricing */}
+        <section id="preco" className="container mx-auto px-6 mt-32">
+          <div className="max-w-5xl mx-auto rounded-3xl border border-white/10 bg-card/30 backdrop-blur-xl overflow-hidden shadow-2xl relative">
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[100px] pointer-events-none"></div>
+            
+            <div className="grid md:grid-cols-2">
+              <div className="p-10 md:p-16 flex flex-col justify-center border-b md:border-b-0 md:border-r border-white/5 relative z-10">
+                <Badge variant="outline" className="w-fit mb-6 border-primary/30 text-primary uppercase tracking-widest text-[10px]">
+                  Simples e Transparente
+                </Badge>
+                <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
+                  Apenas R$ 49<span className="text-2xl text-muted-foreground font-normal">/mês</span>
+                </h2>
+                <p className="text-lg text-muted-foreground mb-8">
+                  Um plano único. Sem taxas escondidas, sem comissões por agendamento. Todas as funcionalidades liberadas.
+                </p>
+                <Link href="/assinar" className="mt-auto">
+                  <Button size="lg" className="w-full h-14 rounded-xl text-base shadow-lg shadow-primary/20">
+                    Começar Agora
                   </Button>
                 </Link>
               </div>
+              <div className="p-10 md:p-16 bg-black/20 relative z-10">
+                <h3 className="font-semibold text-lg mb-6 flex items-center gap-2">
+                  <Zap className="size-5 text-accent" />
+                  Tudo que está incluso:
+                </h3>
+                <div className="space-y-4">
+                  <PricingFeature text="Agendamentos e serviços ilimitados" />
+                  <PricingFeature text="Gestão de clientes avançada" />
+                  <PricingFeature text="Múltiplos profissionais na mesma conta" />
+                  <PricingFeature text="Link de agendamento personalizado" />
+                  <PricingFeature text="Lembretes via WhatsApp integrados" />
+                  <PricingFeature text="Relatórios de performance e faturamento" />
+                  <PricingFeature text="Suporte técnico prioritário" />
+                </div>
+              </div>
             </div>
           </div>
-
-          {/* CTA Section */}
-          <div className="mt-24 p-8 md:p-12 rounded-2xl bg-card border border-border text-center">
-            <h2 className="text-2xl md:text-4xl font-bold mb-4" style={{ fontFamily: "var(--font-rye)" }}>
-              Pronto para organizar sua barbearia?
-            </h2>
-            <p className="font-playfair text-muted-foreground italic mb-8 max-w-lg mx-auto">
-              Assine agora e comece a usar o MK Barber em minutos. 
-              Configure sua conta e receba agendamentos ainda hoje.
-            </p>
-            <Link href="/assinar">
-              <Button size="lg" className="gap-2 text-base px-8 py-6">
-                Comece Agora <ArrowRight className="size-4" />
-              </Button>
-            </Link>
-          </div>
-        </div>
+        </section>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border py-8">
-        <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo.png" alt="MK Barber" width={28} height={28} className="object-contain" />
-            <span style={{ fontFamily: "var(--font-rye)" }} className="text-primary">MK Barber</span>
+      <footer className="border-t border-white/10 bg-black/40 py-12">
+        <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+          <Link href="/" className="flex items-center">
+            <Image src="/logo.png" alt="Trimly" width={180} height={45} className="object-contain" />
           </Link>
-          <div className="flex items-center gap-6 text-sm text-muted-foreground font-playfair">
-            <Link href="#" className="hover:text-foreground transition-colors">Termos</Link>
+          <div className="flex items-center gap-8 text-sm text-muted-foreground font-medium">
+            <Link href="#" className="hover:text-foreground transition-colors">Termos de Uso</Link>
             <Link href="#" className="hover:text-foreground transition-colors">Privacidade</Link>
-            <Link href="#" className="hover:text-foreground transition-colors">Suporte</Link>
+            <Link href="#" className="hover:text-foreground transition-colors">Contato</Link>
           </div>
+          <p className="text-sm text-muted-foreground">
+            © {new Date().getFullYear()} Trimly. Todos os direitos reservados.
+          </p>
         </div>
       </footer>
     </div>
@@ -271,32 +305,23 @@ export default function HomePage() {
 
 function FeatureCard({ icon: Icon, title, description }: { icon: React.ElementType; title: string; description: string }) {
   return (
-    <div className="p-6 rounded-xl bg-card border border-border hover:border-primary/30 transition-colors group">
-      <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-        <Icon className="size-5 text-primary" />
+    <div className="p-8 rounded-2xl bg-card border border-white/5 hover:border-primary/30 transition-all duration-300 group hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/5">
+      <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
+        <Icon className="size-6 text-primary" />
       </div>
-      <h3 className="font-playfair font-semibold text-lg mb-2">{title}</h3>
-      <p className="text-sm text-muted-foreground">{description}</p>
-    </div>
-  )
-}
-
-function BenefitItem({ icon: Icon, text }: { icon: React.ElementType; text: string }) {
-  return (
-    <div className="flex items-center gap-3 p-4 rounded-lg bg-card border border-border">
-      <div className="size-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-        <Icon className="size-4 text-primary" />
-      </div>
-      <span className="font-playfair text-sm">{text}</span>
+      <h3 className="font-bold text-xl mb-3 tracking-tight">{title}</h3>
+      <p className="text-muted-foreground leading-relaxed">{description}</p>
     </div>
   )
 }
 
 function PricingFeature({ text }: { text: string }) {
   return (
-    <div className="flex items-center gap-2">
-      <CheckCircle2 className="size-4 text-primary shrink-0" />
-      <span className="font-playfair text-sm">{text}</span>
+    <div className="flex items-center gap-3">
+      <div className="size-5 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
+        <CheckCircle2 className="size-3.5 text-green-500" />
+      </div>
+      <span className="text-muted-foreground">{text}</span>
     </div>
   )
 }

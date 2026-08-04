@@ -1,25 +1,17 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Playfair_Display, Rye } from 'next/font/google'
+import { Plus_Jakarta_Sans } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from '@/components/ui/toaster'
 import './globals.css'
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-
-const playfair = Playfair_Display({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  variable: "--font-playfair",
-  weight: ["400", "500", "600", "700", "800", "900"],
-});
-
-const rye = Rye({
-  subsets: ["latin"],
-  variable: "--font-rye",
-  weight: "400",
+  variable: "--font-plus-jakarta-sans",
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
-  title: 'MK Barber | Sistema de Gestão para Barbearias',
+  title: 'Trimly | Plataforma de Agendamento Inteligente',
   description: 'Plataforma moderna para gestão de barbearias. Agendamentos, clientes e muito mais.',
   generator: 'v0.app',
 }
@@ -37,7 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className="dark bg-background">
-      <body className={`${inter.variable} ${playfair.variable} ${rye.variable} font-sans antialiased`}>
+      <body className={`${plusJakartaSans.variable} font-sans antialiased`}>
         {children}
         <Toaster />
         {process.env.NODE_ENV === 'production' && <Analytics />}

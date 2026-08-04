@@ -45,12 +45,11 @@ export default function LoginPage() {
           <Link href="/" className="inline-flex items-center gap-3 mb-8">
             <Image 
               src="/logo.png" 
-              alt="MK Barber" 
-              width={40} 
-              height={40}
-              className="rounded-lg"
+              alt="Trimly" 
+              width={200} 
+              height={60}
+              className="object-contain"
             />
-            <span style={{ fontFamily: "var(--font-rye)" }} className="text-lg text-primary">MK Barber</span>
           </Link>
 
           <div className="mb-8">
@@ -135,13 +134,13 @@ export default function LoginPage() {
           <div className="flex justify-center mb-8">
             <Image 
               src="/logo.png" 
-              alt="MK Barber" 
-              width={100} 
-              height={100}
-              className="rounded-2xl"
+              alt="Trimly" 
+              width={260} 
+              height={70}
+              className="object-contain"
             />
           </div>
-          <h2 className="text-2xl font-bold mb-4" style={{ fontFamily: "var(--font-rye)" }}>Bem-vindo de volta</h2>
+          <h2 className="text-2xl font-bold mb-4 tracking-tight">Bem-vindo de volta</h2>
           <p className="text-muted-foreground mb-8">
             Acesse seu painel para gerenciar agendamentos, clientes e acompanhar o desempenho da sua barbearia.
           </p>

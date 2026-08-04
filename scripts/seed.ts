@@ -29,7 +29,7 @@ async function seed() {
       .insert(barbershops)
       .values({
         ownerId: DEV_OWNER_ID,
-        name: 'MK Barber',
+        name: 'Trimly',
         slug: 'mk-barber',
         phone: '(11) 99999-9999',
         address: 'Rua das Barbearias, 123 - Centro',

@@ -35,6 +35,7 @@ import {
 } from "lucide-react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import { motion, AnimatePresence } from "framer-motion"
 
 type Step = "service" | "barber" | "datetime" | "info" | "confirmation"
 
@@ -280,24 +281,34 @@ function AgendarContent({ slug }: { slug?: string }) {
         </div>
 
         <div className="max-w-3xl mx-auto">
-          {step === "service" && (
-            <div className="space-y-4">
-              <div className="text-center mb-6">
-                <h1 className="text-2xl font-bold mb-2">Escolha o Serviço</h1>
-                <p className="text-muted-foreground">Selecione o serviço que deseja agendar</p>
-              </div>
-              {services.length === 0 ? (
-                <p className="text-center text-muted-foreground">Nenhum serviço disponível no momento.</p>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {services.map((service) => (
-                    <Card
-                      key={service.id}
-                      className={`cursor-pointer transition-all hover:border-primary/50 ${
-                        selectedService?.id === service.id ? "border-primary bg-primary/5" : "bg-card border-border"
-                      }`}
-                      onClick={() => handleServiceSelect(service)}
-                    >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
+              {step === "service" && (
+                <div className="space-y-4">
+                  <div className="text-center mb-8">
+                    <h1 className="text-3xl font-bold mb-3 tracking-tight">Escolha o Serviço</h1>
+                    <p className="text-muted-foreground text-sm">Selecione o serviço que deseja agendar</p>
+                  </div>
+                  {services.length === 0 ? (
+                    <p className="text-center text-muted-foreground">Nenhum serviço disponível no momento.</p>
+                  ) : (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {services.map((service) => (
+                        <Card
+                          key={service.id}
+                          className={`cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/10 ${
+                            selectedService?.id === service.id 
+                              ? "border-primary bg-primary/10 shadow-[0_0_15px_rgba(201,138,91,0.15)]" 
+                              : "bg-card border-white/5"
+                          }`}
+                          onClick={() => handleServiceSelect(service)}
+                        >
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between mb-2">
                           <h3 className="font-semibold">{service.name}</h3>
@@ -327,32 +338,34 @@ function AgendarContent({ slug }: { slug?: string }) {
             </div>
           )}
 
-          {step === "barber" && (
-            <div className="space-y-4">
-              <div className="text-center mb-6">
-                <h1 className="text-2xl font-bold mb-2">Escolha o Profissional</h1>
-                <p className="text-muted-foreground">Selecione seu barbeiro preferido</p>
-              </div>
-              {loadingBarbers ? (
-                <div className="flex justify-center py-12">
-                  <Loader2 className="size-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : barbers.length === 0 ? (
-                <p className="text-center text-muted-foreground">Nenhum profissional disponível para este serviço.</p>
-              ) : (
-                <div className="grid gap-3">
-                  {barbers.map((barber) => (
-                    <Card
-                      key={barber.id}
-                      className={`cursor-pointer transition-all hover:border-primary/50 ${
-                        selectedBarber?.id === barber.id ? "border-primary bg-primary/5" : "bg-card border-border"
-                      }`}
-                      onClick={() => {
-                        setSelectedBarber(barber)
-                        setSelectedDate(undefined)
-                        setSelectedTime(null)
-                      }}
-                    >
+              {step === "barber" && (
+                <div className="space-y-4">
+                  <div className="text-center mb-8">
+                    <h1 className="text-3xl font-bold mb-3 tracking-tight">Escolha o Profissional</h1>
+                    <p className="text-muted-foreground text-sm">Selecione seu barbeiro preferido</p>
+                  </div>
+                  {loadingBarbers ? (
+                    <div className="flex justify-center py-12">
+                      <Loader2 className="size-6 animate-spin text-primary" />
+                    </div>
+                  ) : barbers.length === 0 ? (
+                    <p className="text-center text-muted-foreground">Nenhum profissional disponível para este serviço.</p>
+                  ) : (
+                    <div className="grid gap-4">
+                      {barbers.map((barber) => (
+                        <Card
+                          key={barber.id}
+                          className={`cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/10 ${
+                            selectedBarber?.id === barber.id 
+                              ? "border-primary bg-primary/10 shadow-[0_0_15px_rgba(201,138,91,0.15)]" 
+                              : "bg-card border-white/5"
+                          }`}
+                          onClick={() => {
+                            setSelectedBarber(barber)
+                            setSelectedDate(undefined)
+                            setSelectedTime(null)
+                          }}
+                        >
                       <CardContent className="p-4 flex items-center gap-4">
                         <Avatar className="size-14">
                           <AvatarImage
@@ -389,33 +402,33 @@ function AgendarContent({ slug }: { slug?: string }) {
             </div>
           )}
 
-          {step === "datetime" && (
-            <div className="space-y-6">
-              <div className="text-center mb-6">
-                <h1 className="text-2xl font-bold mb-2">Escolha Data e Horário</h1>
-                <p className="text-muted-foreground">Selecione quando deseja ser atendido</p>
-              </div>
-              <div className="grid gap-6 lg:grid-cols-2">
-                <Card className="bg-card border-border">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Data</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-3">
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={setSelectedDate}
-                      locale={ptBR}
-                      disabled={(date) => {
-                        const today = new Date()
-                        today.setHours(0, 0, 0, 0)
-                        return date < today || date.getDay() === 0
-                      }}
-                      className="rounded-md"
-                    />
-                  </CardContent>
-                </Card>
-                <Card className="bg-card border-border">
+              {step === "datetime" && (
+                <div className="space-y-6">
+                  <div className="text-center mb-8">
+                    <h1 className="text-3xl font-bold mb-3 tracking-tight">Escolha Data e Horário</h1>
+                    <p className="text-muted-foreground text-sm">Selecione quando deseja ser atendido</p>
+                  </div>
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    <Card className="bg-card border-white/5 backdrop-blur-sm">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base">Data</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-3 flex justify-center">
+                        <Calendar
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={setSelectedDate}
+                          locale={ptBR}
+                          disabled={(date) => {
+                            const today = new Date()
+                            today.setHours(0, 0, 0, 0)
+                            return date < today || date.getDay() === 0
+                          }}
+                          className="rounded-md pointer-events-auto"
+                        />
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-card border-white/5 backdrop-blur-sm">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base">Horário</CardTitle>
                     <CardDescription>
@@ -456,110 +469,111 @@ function AgendarContent({ slug }: { slug?: string }) {
             </div>
           )}
 
-          {step === "info" && (
-            <div className="space-y-6">
-              <div className="text-center mb-6">
-                <h1 className="text-2xl font-bold mb-2">Seus Dados</h1>
-                <p className="text-muted-foreground">Preencha suas informações para confirmar</p>
-              </div>
-              <Card className="bg-card border-border max-w-md mx-auto">
-                <CardContent className="p-6 space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nome Completo</Label>
-                    <Input
-                      id="name"
-                      placeholder="Seu nome"
-                      value={clientInfo.name}
-                      onChange={(e) => setClientInfo({ ...clientInfo, name: e.target.value })}
-                      className="bg-secondary/50"
-                    />
+              {step === "info" && (
+                <div className="space-y-6">
+                  <div className="text-center mb-8">
+                    <h1 className="text-3xl font-bold mb-3 tracking-tight">Seus Dados</h1>
+                    <p className="text-muted-foreground text-sm">Preencha suas informações para confirmar</p>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Telefone</Label>
-                    <Input
-                      id="phone"
-                      placeholder="(00) 00000-0000"
-                      value={clientInfo.phone}
-                      onChange={(e) => setClientInfo({ ...clientInfo, phone: e.target.value })}
-                      className="bg-secondary/50"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">E-mail (opcional)</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={clientInfo.email}
-                      onChange={(e) => setClientInfo({ ...clientInfo, email: e.target.value })}
-                      className="bg-secondary/50"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {step === "confirmation" && (
-            <div className="space-y-6">
-              <div className="text-center mb-6">
-                <div className="size-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4">
-                  <Check className="size-8 text-green-500" />
-                </div>
-                <h1 className="text-2xl font-bold mb-2">Agendamento Confirmado!</h1>
-                <p className="text-muted-foreground">Guarde os detalhes do seu horário abaixo</p>
-              </div>
-              <Card className="bg-card border-border max-w-md mx-auto">
-                <CardContent className="p-6 space-y-4">
-                  <div className="flex items-center justify-between py-2 border-b border-border">
-                    <span className="text-muted-foreground">Serviço</span>
-                    <span className="font-medium">{selectedService?.name}</span>
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-b border-border">
-                    <span className="text-muted-foreground">Profissional</span>
-                    <span className="font-medium">{selectedBarber?.name}</span>
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-b border-border">
-                    <span className="text-muted-foreground">Data</span>
-                    <span className="font-medium">
-                      {selectedDate && format(selectedDate, "dd/MM/yyyy")}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-b border-border">
-                    <span className="text-muted-foreground">Horário</span>
-                    <span className="font-medium">{selectedTime}</span>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-muted-foreground">Valor</span>
-                    <span className="font-bold text-primary text-lg">
-                      R$ {selectedService ? formatPrice(selectedService.price) : "—"}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-              {(barbershop.address || barbershop.phone) && (
-                <div className="text-center space-y-3">
-                  {barbershop.address && (
-                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="size-4" />
-                      {barbershop.address}
-                    </div>
-                  )}
-                  {barbershop.phone && (
-                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                      <Phone className="size-4" />
-                      {barbershop.phone}
-                    </div>
-                  )}
+                  <Card className="bg-card border-white/5 max-w-md mx-auto backdrop-blur-sm shadow-xl shadow-black/40">
+                    <CardContent className="p-8 space-y-5">
+                      <div className="space-y-2">
+                        <Label htmlFor="name" className="text-xs uppercase tracking-wider text-muted-foreground">Nome Completo</Label>
+                        <Input
+                          id="name"
+                          placeholder="Seu nome"
+                          value={clientInfo.name}
+                          onChange={(e) => setClientInfo({ ...clientInfo, name: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phone" className="text-xs uppercase tracking-wider text-muted-foreground">Telefone</Label>
+                        <Input
+                          id="phone"
+                          placeholder="(00) 00000-0000"
+                          value={clientInfo.phone}
+                          onChange={(e) => setClientInfo({ ...clientInfo, phone: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="email" className="text-xs uppercase tracking-wider text-muted-foreground">E-mail (opcional)</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="seu@email.com"
+                          value={clientInfo.email}
+                          onChange={(e) => setClientInfo({ ...clientInfo, email: e.target.value })}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               )}
-              <div className="flex justify-center">
-                <Link href="/">
-                  <Button variant="outline">Voltar ao Início</Button>
-                </Link>
-              </div>
-            </div>
-          )}
+
+              {step === "confirmation" && (
+                <div className="space-y-6">
+                  <div className="text-center mb-8">
+                    <div className="size-20 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(34,197,94,0.15)] relative">
+                      <div className="absolute inset-0 rounded-full border border-green-500/20 animate-ping"></div>
+                      <Check className="size-10 text-green-500" />
+                    </div>
+                    <h1 className="text-3xl font-bold mb-3 tracking-tight">Agendamento Confirmado!</h1>
+                    <p className="text-muted-foreground text-sm">Guarde os detalhes do seu horário abaixo</p>
+                  </div>
+                  <Card className="bg-card border-white/5 max-w-md mx-auto backdrop-blur-sm shadow-xl shadow-black/40 overflow-hidden relative">
+                    <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary/50 via-primary to-primary/50"></div>
+                    <CardContent className="p-8 space-y-4 relative z-10">
+                      <div className="flex items-center justify-between py-3 border-b border-white/5">
+                        <span className="text-muted-foreground text-sm">Serviço</span>
+                        <span className="font-semibold">{selectedService?.name}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-3 border-b border-white/5">
+                        <span className="text-muted-foreground text-sm">Profissional</span>
+                        <span className="font-semibold">{selectedBarber?.name}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-3 border-b border-white/5">
+                        <span className="text-muted-foreground text-sm">Data</span>
+                        <span className="font-semibold">
+                          {selectedDate && format(selectedDate, "dd/MM/yyyy")}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between py-3 border-b border-white/5">
+                        <span className="text-muted-foreground text-sm">Horário</span>
+                        <span className="font-semibold">{selectedTime}</span>
+                      </div>
+                      <div className="flex items-center justify-between pt-4 pb-2">
+                        <span className="text-muted-foreground text-sm">Valor</span>
+                        <span className="font-bold text-primary text-2xl drop-shadow-sm">
+                          R$ {selectedService ? formatPrice(selectedService.price) : "—"}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  {(barbershop.address || barbershop.phone) && (
+                    <div className="text-center space-y-3 pt-4">
+                      {barbershop.address && (
+                        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                          <MapPin className="size-4 text-primary/70" />
+                          {barbershop.address}
+                        </div>
+                      )}
+                      {barbershop.phone && (
+                        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                          <Phone className="size-4 text-primary/70" />
+                          {barbershop.phone}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex justify-center pt-4">
+                    <Link href="/">
+                      <Button variant="outline" className="px-8">Voltar ao Início</Button>
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
 
           {step !== "confirmation" && (
             <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">

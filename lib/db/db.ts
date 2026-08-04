@@ -8,6 +8,7 @@ export interface Barbershop {
   logo_type: 'preset' | 'custom'
   logo_preset: string
   logo_custom: string // base64 or url
+  logo_position?: string // center, top, bottom, etc.
   created_at: string
 }
 
@@ -118,11 +119,12 @@ class LocalStorageDatabase implements DatabaseService {
       barbershops: {
         "mk-barber": {
           id: defaultShopId,
-          name: "MK Barber",
+          name: "Trimly",
           slug: "mk-barber",
           logo_type: "preset",
           logo_preset: "vintage-gold",
           logo_custom: "",
+          logo_position: "center",
           created_at: new Date().toISOString()
         }
       },

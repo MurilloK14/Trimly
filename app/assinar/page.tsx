@@ -37,15 +37,14 @@ export default function AssinarPage() {
       {/* Header */}
       <header className="border-b border-border px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
+          <Link href="/" className="flex items-center">
             <Image 
               src="/logo.png" 
-              alt="MK Barber" 
-              width={40} 
-              height={40}
-              className="rounded-lg"
+              alt="Trimly" 
+              width={200} 
+              height={60}
+              className="object-contain"
             />
-            <span style={{ fontFamily: "var(--font-rye)" }} className="text-lg text-primary">MK Barber</span>
           </Link>
           <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             Já sou assinante
@@ -58,14 +57,14 @@ export default function AssinarPage() {
           {/* Left - Plan Details */}
           <div className="order-2 lg:order-1">
             <div className="sticky top-8">
-              <h1 className="text-3xl font-bold mb-2">Comece a usar o MK Barber</h1>
+              <h1 className="text-3xl font-bold mb-2">Comece a usar a Trimly</h1>
               <p className="text-muted-foreground mb-8">
                 Assine e configure sua conta em poucos minutos
               </p>
 
               <div className="p-6 rounded-xl bg-card border border-border mb-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-semibold">MK Barber Completo</h2>
+                  <h2 className="font-semibold">Trimly Completo</h2>
                   <div className="text-right">
                     <span className="text-2xl font-bold">R$ 49</span>
                     <span className="text-muted-foreground text-sm">/mês</span>

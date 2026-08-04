@@ -390,7 +390,7 @@ function StatsCard({
   icon: React.ElementType
 }) {
   return (
-    <Card className="bg-card border-border">
+    <Card className="bg-card border-white/5 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300">
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div className="space-y-2">
@@ -405,8 +405,8 @@ function StatsCard({
               <span>{change} vs ontem</span>
             </div>
           </div>
-          <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Icon className="size-5 text-primary" />
+          <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20 shadow-[inset_0_0_10px_rgba(201,138,91,0.1)]">
+            <Icon className="size-5 text-primary drop-shadow-sm" />
           </div>
         </div>
       </CardContent>

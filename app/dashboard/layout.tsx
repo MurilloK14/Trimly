@@ -21,9 +21,9 @@ export default function DashboardLayout({
         <BarberSidebar />
         <SidebarInset className="bg-background">
           {/* Header */}
-          <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="h-4" />
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-white/5 bg-card/40 backdrop-blur-md px-4 sticky top-0 z-40">
+            <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground transition-colors" />
+            <Separator orientation="vertical" className="h-4 bg-border/50" />
             
             <div className="flex-1 flex items-center gap-4">
               <div className="relative max-w-md flex-1 hidden sm:block">

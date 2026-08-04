@@ -12,6 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { useBarberSettings } from "@/hooks/use-barber-settings"
 import { BarberLogo } from "@/components/barber-logo"
+import Cropper from "react-easy-crop"
+import { getCroppedImg } from "@/lib/utils/cropImage"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import {
   User,
   Scissors,
@@ -42,8 +45,6 @@ import {
   unlinkBarberService,
 } from "@/lib/actions/profile"
 
-import { compressAndValidateImage } from "@/lib/utils/image-compression"
-
 const LOGO_PRESETS = [
   { id: "vintage-gold",  label: "Vintage Gold" },
   { id: "modern-dark",   label: "Modern Dark" },
@@ -66,6 +67,13 @@ export default function ConfiguracoesPage() {
   const [logoType, setLogoType] = useState<"preset" | "custom">("preset")
   const [logoCustom, setLogoCustom] = useState("")
   const [savingBrand, setSavingBrand] = useState(false)
+
+  // ── Crop State ──
+  const [cropFileUrl, setCropFileUrl] = useState<string | null>(null)
+  const [crop, setCrop] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null)
+  const [isCropDialogOpen, setIsCropDialogOpen] = useState(false)
 
   // ── Dados da barbearia (Supabase) ──
   const [shopId, setShopId] = useState("")
@@ -150,14 +158,29 @@ export default function ConfiguracoesPage() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    const result = await compressAndValidateImage(file, { maxSizeMB: 2, maxWidth: 500, maxHeight: 500 })
-    if (!result.success) {
-      toast({ title: "Arquivo inválido", description: result.error, variant: "destructive" })
-      return
-    }
+    const url = URL.createObjectURL(file)
+    setCropFileUrl(url)
+    setCrop({ x: 0, y: 0 })
+    setZoom(1)
+    setIsCropDialogOpen(true)
+  }
 
-    setLogoCustom(result.dataUrl)
-    setLogoType("custom")
+  const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels)
+  }, [])
+
+  const handleCropConfirm = async () => {
+    if (!cropFileUrl || !croppedAreaPixels) return
+    try {
+      const croppedImageBase64 = await getCroppedImg(cropFileUrl, croppedAreaPixels)
+      setLogoCustom(croppedImageBase64)
+      setLogoType("custom")
+      setIsCropDialogOpen(false)
+      setCropFileUrl(null)
+    } catch (e) {
+      console.error(e)
+      toast({ title: "Erro ao cortar", variant: "destructive" })
+    }
   }
 
   const getSchedulingLink = () => typeof window !== "undefined" ? `${window.location.origin}/agendar/${shopSlug}` : ""
@@ -309,7 +332,7 @@ export default function ConfiguracoesPage() {
                     id="brandName"
                     value={brandName}
                     onChange={e => setBrandName(e.target.value)}
-                    placeholder="Ex: MK Barber"
+                    placeholder="Ex: Trimly"
                     className="bg-secondary/50 border-border"
                   />
                 </div>
@@ -600,6 +623,46 @@ export default function ConfiguracoesPage() {
           </TabsContent>
         )}
       </Tabs>
+
+      {/* Crop Dialog */}
+      <Dialog open={isCropDialogOpen} onOpenChange={setIsCropDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Enquadre seu logo</DialogTitle>
+          </DialogHeader>
+          <div className="relative h-64 w-full bg-black/10 rounded-md overflow-hidden mt-2">
+            {cropFileUrl && (
+              <Cropper
+                image={cropFileUrl}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="round"
+                showGrid={false}
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+              />
+            )}
+          </div>
+          <div className="mt-4 px-2 space-y-2">
+            <Label className="text-xs">Zoom</Label>
+            <input
+              type="range"
+              value={zoom}
+              min={1}
+              max={3}
+              step={0.05}
+              onChange={(e) => setZoom(Number(e.target.value))}
+              className="w-full accent-primary"
+            />
+          </div>
+          <DialogFooter className="mt-4 gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setIsCropDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleCropConfirm}>Confirmar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
