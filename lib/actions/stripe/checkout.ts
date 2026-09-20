@@ -7,7 +7,7 @@ import { barbershops } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import type { ActionResult } from '@/lib/booking/types'
 
-const TRIAL_PERIOD_DAYS = 14
+const TRIAL_PERIOD_DAYS = 7
 
 /**
  * Cria uma Stripe Checkout Session para o plano mensal do Trimly.
@@ -16,7 +16,7 @@ const TRIAL_PERIOD_DAYS = 14
  *   1. Verifica autenticação via Supabase
  *   2. Busca a barbearia do usuário logado
  *   3. Cria ou reutiliza um Stripe Customer
- *   4. Cria a Checkout Session com trial de 14 dias
+ *   4. Cria a Checkout Session com trial de 7 dias
  *   5. Retorna a URL de redirecionamento para o Stripe Checkout
  *
  * Segurança:
@@ -76,11 +76,11 @@ export async function createCheckoutSession(): Promise<ActionResult<string>> {
         .where(eq(barbershops.id, barbershop.id))
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://trimly-mk.vercel.app'
 
     // Cria a Checkout Session
     // payment_method_collection: 'always' → coleta cartão antes do trial
-    // Necessário para que a cobrança automática funcione ao final dos 14 dias.
+    // Necessário para que a cobrança automática funcione ao final dos 7 dias.
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',

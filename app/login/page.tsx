@@ -145,7 +145,7 @@ export default function LoginPage() {
             <p className="text-sm text-muted-foreground text-center">
               Ainda não é assinante?{" "}
               <Link href="/assinar" className="text-primary hover:underline font-medium">
-                Começar 14 dias grátis
+                Começar 7 dias grátis
               </Link>
             </p>
             <p className="text-xs text-muted-foreground text-center mt-1">

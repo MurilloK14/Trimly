@@ -117,7 +117,7 @@ Copie essa chave `whsec_...` e cole em `STRIPE_WEBHOOK_SECRET` no seu arquivo `.
    ```
 2. Crie uma conta ou faça login em `/login`.
 3. Tente acessar `/dashboard`. O middleware irá redirecioná-lo para `/assinar`.
-4. Na página `/assinar`, clique em **Começar 14 Dias Grátis**.
+4. Na página `/assinar`, clique em **Começar 7 Dias Grátis**.
 5. Você será redirecionado para a página segura do **Stripe Checkout**:
    - Use o cartão de teste do Stripe: `4242 4242 4242 4242`
    - Qualquer validade futura (ex: `12/28`) e qualquer CVC (ex: `123`).
@@ -143,14 +143,14 @@ No painel do projeto na Vercel:
   - `STRIPE_SECRET_KEY`: sua chave de teste ou produção (`sk_...`).
   - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`: sua chave pública (`pk_...`).
   - `STRIPE_PRICE_ID`: o ID do preço criado no Stripe.
-  - `NEXT_PUBLIC_SITE_URL`: o domínio oficial (ex: `https://trimly.com.br` ou `https://seu-projeto.vercel.app`).
+  - `NEXT_PUBLIC_SITE_URL`: `https://trimly-mk.vercel.app`.
 
 ### 2. Cadastrar o Endpoint no Stripe Dashboard
 1. No Stripe Dashboard, vá em **Developers (Desenvolvedores)** → **Webhooks**.
 2. Clique em **+ Add endpoint (Adicionar endpoint)**.
 3. No campo **Endpoint URL**, insira:
    ```
-   https://seu-dominio.vercel.app/api/stripe/webhook
+   https://trimly-mk.vercel.app/api/stripe/webhook
    ```
 4. Em **Events to send (Eventos a enviar)**, selecione:
    - `checkout.session.completed`
@@ -170,7 +170,7 @@ No painel do projeto na Vercel:
 
 | Status da Assinatura | Descrição | Acesso ao Painel |
 |---|---|---|
-| `trialing` | Período de teste de 14 dias ativo | ✅ Liberado |
+| `trialing` | Período de teste de 7 dias ativo | ✅ Liberado |
 | `active` | Assinatura paga e em dia | ✅ Liberado |
 | `past_due` | Falha no pagamento da fatura | ❌ Bloqueado (redireciona para `/assinar`) |
 | `canceled` | Assinatura cancelada pelo cliente | ❌ Bloqueado |

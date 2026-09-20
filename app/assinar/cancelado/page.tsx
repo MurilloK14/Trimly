@@ -71,7 +71,7 @@ export default function AssinaturaCalceladaPage() {
           {/* Mensagem */}
           <div className="rounded-xl bg-card border border-border p-5 text-left">
             <p className="text-sm text-muted-foreground">
-              Quando você estiver pronto, pode iniciar o processo novamente. Os seus 14 dias grátis continuam disponíveis — sem compromisso durante o período de teste.
+              Quando você estiver pronto, pode iniciar o processo novamente. Os seus 7 dias grátis continuam disponíveis — sem compromisso durante o período de teste.
             </p>
           </div>
 

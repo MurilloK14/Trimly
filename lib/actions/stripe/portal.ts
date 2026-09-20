@@ -40,7 +40,7 @@ export async function createBillingPortalSession(): Promise<ActionResult<string>
       }
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://trimly-mk.vercel.app'
 
     const session = await stripe.billingPortal.sessions.create({
       customer: barbershop.stripeCustomerId,

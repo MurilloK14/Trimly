@@ -269,7 +269,7 @@ export default function OnboardingPage() {
             </div>
             <Button asChild size="lg" className="w-full gap-2">
               <Link href="/assinar">
-                Começar 14 dias grátis
+                Começar 7 dias grátis
                 <ArrowRight className="size-4" />
               </Link>
             </Button>
@@ -311,7 +311,7 @@ export default function OnboardingPage() {
           <div className="text-center mb-8">
             <h1 className="text-2xl md:text-3xl font-bold mb-2">Configure sua barbearia</h1>
             <p className="text-muted-foreground text-sm">
-              Seu período de teste de 14 dias foi ativado. Conclua o cadastro abaixo para entrar no painel.
+              Seu período de teste de 7 dias foi ativado. Conclua o cadastro abaixo para entrar no painel.
             </p>
           </div>
 

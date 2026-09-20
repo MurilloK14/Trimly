@@ -1071,7 +1071,7 @@ export default function HomePage() {
                   Por R$ 29,90<span className="text-2xl text-muted-foreground font-normal">/mês</span>
                 </h2>
                 <p className="text-base text-muted-foreground mb-8 leading-relaxed">
-                  Garanta o valor promocional de lançamento com todas as funcionalidades liberadas. Sem taxas escondidas, sem comissões por agendamento e 14 dias grátis para testar.
+                  Garanta o valor promocional de lançamento com todas as funcionalidades liberadas. Sem taxas escondidas, sem comissões por agendamento e 7 dias grátis para testar.
                 </p>
                 <Link href="/assinar" className="mt-auto">
                   <Button size="lg" className="w-full h-14 rounded-xl text-base shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all">

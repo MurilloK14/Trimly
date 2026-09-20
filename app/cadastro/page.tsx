@@ -266,7 +266,7 @@ function CadastroContent() {
             </div>
             <Button asChild size="lg" className="w-full gap-2">
               <Link href="/assinar">
-                Começar 14 dias grátis
+                Começar 7 dias grátis
                 <ArrowRight className="size-4" />
               </Link>
             </Button>

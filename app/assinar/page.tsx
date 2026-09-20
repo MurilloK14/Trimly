@@ -174,10 +174,10 @@ export default function AssinarPage() {
               {/* Trial */}
               <div className="rounded-xl bg-secondary/60 border border-border px-4 py-4 mb-6 space-y-1">
                 <p className="font-semibold text-sm">
-                  🎉 14 dias grátis para começar
+                  🎉 7 dias grátis para começar
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Sem cobrança durante o período de teste. Após os 14 dias, você será cobrado automaticamente <strong>R$&nbsp;29,90/mês</strong> enquanto a promoção de lançamento estiver vigente. Cancele a qualquer momento antes do fim do período de teste e não será cobrado.
+                  Sem cobrança durante o período de teste. Após os 7 dias, você será cobrado automaticamente <strong>R$&nbsp;29,90/mês</strong> enquanto a promoção de lançamento estiver vigente. Cancele a qualquer momento antes do fim do período de teste e não será cobrado.
                 </p>
               </div>
 
@@ -196,7 +196,7 @@ export default function AssinarPage() {
                   </>
                 ) : (
                   <>
-                    Começar 14 dias grátis
+                    Começar 7 dias grátis
                     <ArrowRight className="size-4" />
                   </>
                 )}
@@ -217,7 +217,7 @@ export default function AssinarPage() {
               {/* Resumo pós-CTA */}
               <div className="mt-5 pt-5 border-t border-border space-y-2 text-xs text-muted-foreground">
                 <div className="flex justify-between">
-                  <span>14 dias de teste</span>
+                  <span>7 dias de teste</span>
                   <span className="font-medium text-foreground">Grátis</span>
                 </div>
                 <div className="flex justify-between">
