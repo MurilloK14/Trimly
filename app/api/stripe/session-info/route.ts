@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { stripe } from '@/lib/stripe/client'
 import { db } from '@/lib/db'
 import { barbershops } from '@/lib/db/schema'
@@ -9,25 +8,16 @@ import { eq } from 'drizzle-orm'
  * GET /api/stripe/session-info?session_id=cs_...
  *
  * Valida a Checkout Session do Stripe após o pagamento/trial ser concluído.
- * Retorna os dados do cliente para preencher a tela de Onboarding.
- *
- * Segurança: Requer autenticação via Supabase.
+ * Retorna os dados do cliente para preencher a tela de Onboarding/Cadastro.
  */
 export async function GET(req: NextRequest) {
   try {
-    // Verificação de autenticação
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 })
-    }
-
     const { searchParams } = new URL(req.url)
     const sessionId = searchParams.get('session_id')
 
-    if (!sessionId) {
+    if (!sessionId || !sessionId.startsWith('cs_') || sessionId.length < 15) {
       return NextResponse.json(
-        { error: 'Parâmetro session_id não informado.' },
+        { error: 'Parâmetro session_id inválido.' },
         { status: 400 }
       )
     }

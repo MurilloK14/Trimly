@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { stripe } from '@/lib/stripe/client'
 
 const TRIAL_PERIOD_DAYS = 14
@@ -16,13 +15,6 @@ const TRIAL_PERIOD_DAYS = 14
  */
 export async function POST(req: NextRequest) {
   try {
-    // Verificação de autenticação
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 })
-    }
-
     const secretKey = (process.env.STRIPE_SECRET_KEY || '').trim()
     const priceId = (process.env.STRIPE_PRICE_ID || '').trim()
 
