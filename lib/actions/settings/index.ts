@@ -22,7 +22,7 @@ export interface SettingsService {
 }
 
 export interface SettingsData {
-  barbershop: { id: string; name: string; slug: string }
+  barbershop: { id: string; name: string; slug: string; phone: string | null }
   barbers: SettingsBarber[]
   services: SettingsService[]
 }
@@ -58,7 +58,7 @@ export async function getBarbershopSettings(): Promise<ActionResult<SettingsData
     return {
       success: true,
       data: {
-        barbershop: { id: shop.id, name: shop.name, slug: shop.slug },
+        barbershop: { id: shop.id, name: shop.name, slug: shop.slug, phone: shop.phone },
         barbers: allBarbers,
         services: allServices.map(s => ({ ...s, price: s.price / 100 })),
       },
@@ -66,6 +66,21 @@ export async function getBarbershopSettings(): Promise<ActionResult<SettingsData
   } catch (err) {
     console.error('[getBarbershopSettings]', err)
     return { success: false, error: 'Erro ao carregar configurações' }
+  }
+}
+
+// Atualiza o telefone / WhatsApp da barbearia
+export async function updateBarbershopPhone(phone: string): Promise<ActionResult<void>> {
+  try {
+    const { user, shop } = await getAuthAndShop()
+    if (!user) return { success: false, error: 'Não autorizado' }
+    if (!shop) return { success: false, error: 'Barbearia não encontrada' }
+
+    await db.update(barbershops).set({ phone, updatedAt: new Date() }).where(eq(barbershops.id, shop.id))
+    return { success: true, data: undefined }
+  } catch (err) {
+    console.error('[updateBarbershopPhone]', err)
+    return { success: false, error: 'Erro ao atualizar WhatsApp' }
   }
 }
 

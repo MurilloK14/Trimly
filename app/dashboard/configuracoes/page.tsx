@@ -28,6 +28,12 @@ import {
   Palette,
   Upload,
   Link2,
+  MessageSquare,
+  Send,
+  ExternalLink,
+  Sparkles,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react"
 import {
   getBarbershopSettings,
@@ -36,6 +42,7 @@ import {
   addService,
   deleteService,
   updateBarbershopName,
+  updateBarbershopPhone,
   type SettingsBarber,
   type SettingsService,
 } from "@/lib/actions/settings"
@@ -79,7 +86,9 @@ export default function ConfiguracoesPage() {
   const [shopId, setShopId] = useState("")
   const [shopName, setShopName] = useState("")
   const [shopSlug, setShopSlug] = useState("")
+  const [whatsappNumber, setWhatsappNumber] = useState("")
   const [savingName, setSavingName] = useState(false)
+  const [savingWhatsapp, setSavingWhatsapp] = useState(false)
 
   // ── Barbeiros ──
   const [barbersList, setBarbersList] = useState<SettingsBarber[]>([])
@@ -118,6 +127,7 @@ export default function ConfiguracoesPage() {
       setShopId(result.data.barbershop.id)
       setShopName(result.data.barbershop.name)
       setShopSlug(result.data.barbershop.slug)
+      setWhatsappNumber(result.data.barbershop.phone || "")
       setBarbersList(result.data.barbers)
       setServicesList(result.data.services)
       const linksResult = await getBarberServiceLinks()
@@ -200,6 +210,31 @@ export default function ConfiguracoesPage() {
     if (result.success) toast({ title: "Nome salvo!" })
     else toast({ title: "Erro", description: result.error, variant: "destructive" })
     setSavingName(false)
+  }
+
+  const handleSaveWhatsapp = async () => {
+    setSavingWhatsapp(true)
+    const clean = whatsappNumber.replace(/\D/g, "")
+    if (clean && clean.length < 10) {
+      toast({
+        title: "Número incompleto",
+        description: "Digite o DDD e o número completo (ex: 11999999999).",
+        variant: "destructive",
+      })
+      setSavingWhatsapp(false)
+      return
+    }
+    const result = await updateBarbershopPhone(clean)
+    if (result.success) {
+      toast({
+        title: "WhatsApp salvo com sucesso!",
+        description: clean ? "Seu número comercial foi atualizado." : "Número removido.",
+      })
+      loadSettings()
+    } else {
+      toast({ title: "Erro ao salvar", description: result.error, variant: "destructive" })
+    }
+    setSavingWhatsapp(false)
   }
 
   const handleAddBarber = async () => {
@@ -291,6 +326,10 @@ export default function ConfiguracoesPage() {
           <TabsTrigger value="servicos" className="gap-2 data-[state=active]:bg-background">
             <Scissors className="size-4" />
             Serviços
+          </TabsTrigger>
+          <TabsTrigger value="whatsapp" className="gap-2 data-[state=active]:bg-background text-emerald-600 dark:text-emerald-400 data-[state=active]:text-emerald-600 font-medium">
+            <MessageSquare className="size-4 text-emerald-500" />
+            WhatsApp & Lembretes
           </TabsTrigger>
           {barbersList.filter(b => b.active).length > 0 && servicesList.filter(s => s.active).length > 0 && (
             <TabsTrigger value="vinculos" className="gap-2 data-[state=active]:bg-background">
@@ -622,6 +661,207 @@ export default function ConfiguracoesPage() {
             </Card>
           </TabsContent>
         )}
+
+        {/* ── ABA: WHATSAPP & LEMBRETES ── */}
+        <TabsContent value="whatsapp" className="space-y-6">
+          {/* Card de Configuração do Número */}
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="size-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                    <MessageSquare className="size-4 text-emerald-500" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base font-medium">WhatsApp Comercial da Barbearia</CardTitle>
+                    <CardDescription>Cadastre o número que seus clientes usarão para falar com você</CardDescription>
+                  </div>
+                </div>
+                {whatsappNumber ? (
+                  <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 gap-1.5 py-1">
+                    <CheckCircle2 className="size-3.5" />
+                    WhatsApp Conectado
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-muted-foreground gap-1.5 py-1">
+                    <AlertCircle className="size-3.5" />
+                    Não configurado
+                  </Badge>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp-input">Número do WhatsApp (com DDD)</Label>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="relative flex-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">
+                      +55
+                    </span>
+                    <Input
+                      id="whatsapp-input"
+                      placeholder="Ex: 11999998888"
+                      value={whatsappNumber}
+                      onChange={(e) => setWhatsappNumber(e.target.value)}
+                      className="pl-12 font-mono"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleSaveWhatsapp}
+                    disabled={savingWhatsapp}
+                    className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    {savingWhatsapp ? (
+                      <>
+                        <Loader2 className="size-4 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="size-4" />
+                        Salvar WhatsApp
+                      </>
+                    )}
+                  </Button>
+                  {whatsappNumber && (
+                    <Button
+                      variant="outline"
+                      className="gap-2 border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10"
+                      onClick={() => {
+                        const clean = whatsappNumber.replace(/\D/g, "")
+                        const full = clean.startsWith("55") ? clean : `55${clean}`
+                        window.open(`https://wa.me/${full}`, "_blank")
+                      }}
+                    >
+                      <ExternalLink className="size-4" />
+                      Testar Link
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Digite apenas os números com o DDD (ex: 11999998888). O Trimly formata automaticamente.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Card: Passo a Passo Didático */}
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Sparkles className="size-4 text-primary" />
+                <CardTitle className="text-base font-medium">Passo a Passo: Como Usar os Lembretes</CardTitle>
+              </div>
+              <CardDescription>
+                Aprenda como funciona o disparo de lembretes em 1 clique para reduzir em até 90% as faltas
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Passo 1 */}
+                <div className="p-4 rounded-xl bg-secondary/30 border border-border/60 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="size-6 rounded-full bg-primary/20 text-primary text-xs font-bold flex items-center justify-center">
+                      1
+                    </span>
+                    <h4 className="font-semibold text-sm">Cadastre seu número</h4>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Salve seu WhatsApp acima. Ele ficará visível na sua página de agendamento online para os clientes tirarem dúvidas direto com você.
+                  </p>
+                </div>
+
+                {/* Passo 2 */}
+                <div className="p-4 rounded-xl bg-secondary/30 border border-border/60 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="size-6 rounded-full bg-primary/20 text-primary text-xs font-bold flex items-center justify-center">
+                      2
+                    </span>
+                    <h4 className="font-semibold text-sm">Acesse sua Agenda</h4>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    No menu lateral, clique em <strong>Agenda</strong> ou <strong>Agendamentos</strong> para ver a lista de clientes confirmados do dia.
+                  </p>
+                </div>
+
+                {/* Passo 3 */}
+                <div className="p-4 rounded-xl bg-secondary/30 border border-border/60 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="size-6 rounded-full bg-emerald-500/20 text-emerald-500 text-xs font-bold flex items-center justify-center">
+                      3
+                    </span>
+                    <h4 className="font-semibold text-sm">Clique em "Lembrete WhatsApp"</h4>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Ao lado de cada cliente, clique no botão verde do WhatsApp. O sistema cria na hora a mensagem com nome, serviço, barbeiro e horário.
+                  </p>
+                </div>
+
+                {/* Passo 4 */}
+                <div className="p-4 rounded-xl bg-secondary/30 border border-border/60 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="size-6 rounded-full bg-emerald-500/20 text-emerald-500 text-xs font-bold flex items-center justify-center">
+                      4
+                    </span>
+                    <h4 className="font-semibold text-sm">Envio com 1 clique</h4>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    O WhatsApp abre no seu celular ou computador com o texto prontinho. Basta apertar <strong>Enviar</strong>. Sem custo extra e sem risco de banimento de chip!
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Card: Prévia da Mensagem enviada ao cliente */}
+          <Card className="bg-card border-border overflow-hidden">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <Send className="size-4 text-emerald-500" />
+                <CardTitle className="text-base font-medium">Prévia da Mensagem de Lembrete</CardTitle>
+              </div>
+              <CardDescription>
+                Exemplo de como a mensagem é gerada automaticamente para o seu cliente
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="max-w-md mx-auto p-4 rounded-2xl bg-[#0b141a] text-white border border-emerald-500/20 shadow-lg">
+                {/* Header Mockup WhatsApp */}
+                <div className="flex items-center gap-2.5 pb-3 mb-3 border-b border-white/10 text-xs text-white/70">
+                  <div className="size-7 rounded-full bg-emerald-600 flex items-center justify-center font-bold text-white text-xs">
+                    {shopName ? shopName[0] : "T"}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-white text-xs">{shopName || "Sua Barbearia"}</p>
+                    <p className="text-[10px] text-emerald-400">Conta Comercial</p>
+                  </div>
+                </div>
+
+                {/* Balão de Mensagem */}
+                <div className="rounded-2xl rounded-tl-none bg-[#005c4b] p-3.5 text-xs text-white space-y-2 shadow-sm">
+                  <p className="font-medium">
+                    Olá, <strong>Carlos Silva</strong>! 💈✂️
+                  </p>
+                  <p className="text-white/90 leading-relaxed">
+                    Passando para lembrar do seu agendamento no(a) <strong>{shopName || "sua barbearia"}</strong>:
+                  </p>
+                  <div className="p-2.5 rounded-lg bg-black/20 text-white/95 space-y-1 font-mono text-[11px]">
+                    <p>📅 <strong>Data:</strong> Hoje</p>
+                    <p>⏰ <strong>Horário:</strong> 15:30</p>
+                    <p>💇 <strong>Serviço:</strong> Corte Degradê + Barba</p>
+                    <p>👤 <strong>Profissional:</strong> {barbersList[0]?.name || "Seu Barbeiro"}</p>
+                  </div>
+                  <p className="text-white/90 text-[11px]">
+                    Podemos confirmar sua presença? Caso precise remarcar, nos avise respondendo esta mensagem! 👍
+                  </p>
+                  <div className="text-right text-[10px] text-white/60 pt-1">
+                    10:15 ✓✓
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Crop Dialog */}

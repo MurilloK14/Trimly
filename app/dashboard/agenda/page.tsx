@@ -48,6 +48,7 @@ import {
   ChevronRight,
   Loader2,
   Calendar,
+  MessageSquare,
 } from "lucide-react"
 import { format, addDays, subDays } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -138,6 +139,24 @@ export default function AgendaPage() {
         variant: "destructive",
       })
     }
+  }
+
+  const handleSendWhatsAppReminder = (apt: AdminAppointment) => {
+    const rawPhone = apt.clientPhone.replace(/\D/g, "")
+    if (!rawPhone || rawPhone.length < 10) {
+      toast({
+        title: "Telefone incompleto",
+        description: "O cliente não possui um número de telefone com DDD válido.",
+        variant: "destructive",
+      })
+      return
+    }
+    const phone = rawPhone.startsWith("55") ? rawPhone : `55${rawPhone}`
+    const dateFormatted = format(selectedDate, "dd/MM", { locale: ptBR })
+    const text = encodeURIComponent(
+      `Olá, ${apt.clientName}! 💈✂️\n\nPassando para lembrar do seu agendamento:\n📅 *Data:* ${dateFormatted}\n⏰ *Horário:* ${apt.time}\n💇 *Serviço:* ${apt.serviceName}\n👤 *Profissional:* ${apt.barberName}\n\nPodemos confirmar sua presença? Caso precise remarcar, nos avise respondendo por aqui! 👍`
+    )
+    window.open(`https://wa.me/${phone}?text=${text}`, "_blank")
   }
 
   const handleCreateAppointment = async (e: React.FormEvent) => {
@@ -452,33 +471,51 @@ export default function AgendaPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="size-8">
-                              <MoreHorizontal className="size-4" />
+                        <div className="flex items-center justify-end gap-1.5">
+                          {appointment.status !== 'cancelled' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-600"
+                              onClick={() => handleSendWhatsAppReminder(appointment)}
+                              title="Enviar Lembrete no WhatsApp"
+                            >
+                              <MessageSquare className="size-3.5" />
+                              <span className="hidden sm:inline">Lembrete</span>
                             </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {appointment.status !== 'confirmed' && appointment.status !== 'completed' && (
-                              <DropdownMenuItem onClick={() => handleStatusChange(appointment.id, 'confirmed')}>
-                                <Check className="size-4 mr-2" />
-                                Confirmar
+                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="size-8">
+                                <MoreHorizontal className="size-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleSendWhatsAppReminder(appointment)}>
+                                <MessageSquare className="size-4 mr-2 text-emerald-500" />
+                                Enviar WhatsApp
                               </DropdownMenuItem>
-                            )}
-                            {appointment.status === 'confirmed' && (
-                              <DropdownMenuItem onClick={() => handleStatusChange(appointment.id, 'completed')}>
-                                <Check className="size-4 mr-2" />
-                                Concluir
-                              </DropdownMenuItem>
-                            )}
-                            {appointment.status !== 'cancelled' && (
-                              <DropdownMenuItem className="text-destructive" onClick={() => handleStatusChange(appointment.id, 'cancelled')}>
-                                <X className="size-4 mr-2" />
-                                Cancelar
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                              {appointment.status !== 'confirmed' && appointment.status !== 'completed' && (
+                                <DropdownMenuItem onClick={() => handleStatusChange(appointment.id, 'confirmed')}>
+                                  <Check className="size-4 mr-2" />
+                                  Confirmar
+                                </DropdownMenuItem>
+                              )}
+                              {appointment.status === 'confirmed' && (
+                                <DropdownMenuItem onClick={() => handleStatusChange(appointment.id, 'completed')}>
+                                  <Check className="size-4 mr-2" />
+                                  Concluir
+                                </DropdownMenuItem>
+                              )}
+                              {appointment.status !== 'cancelled' && (
+                                <DropdownMenuItem className="text-destructive" onClick={() => handleStatusChange(appointment.id, 'cancelled')}>
+                                  <X className="size-4 mr-2" />
+                                  Cancelar
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
