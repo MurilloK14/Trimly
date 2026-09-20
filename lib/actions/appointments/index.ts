@@ -90,6 +90,11 @@ export async function updateAppointmentStatus(
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { success: false, error: 'Não autorizado' }
 
+    const shop = await db.query.barbershops.findFirst({
+      where: and(eq(barbershops.ownerId, user.id), eq(barbershops.active, true)),
+    })
+    if (!shop) return { success: false, error: 'Barbearia não encontrada' }
+
     const updateFields: any = { status }
 
     if (status === 'cancelled') {
@@ -100,7 +105,7 @@ export async function updateAppointmentStatus(
     await db
       .update(appointments)
       .set(updateFields)
-      .where(eq(appointments.id, id))
+      .where(and(eq(appointments.id, id), eq(appointments.barbershopId, shop.id)))
 
     return { success: true, data: undefined }
   } catch (err) {
@@ -172,6 +177,12 @@ export async function createAdminAppointment(input: {
       where: and(eq(barbershops.ownerId, user.id), eq(barbershops.active, true)),
     })
     if (!shop) return { success: false, error: 'Barbearia não encontrada' }
+
+    // Verificar que o barbeiro pertence a esta barbearia
+    const barber = await db.query.barbers.findFirst({
+      where: and(eq(barbers.id, input.barberId), eq(barbers.barbershopId, shop.id), eq(barbers.active, true)),
+    })
+    if (!barber) return { success: false, error: 'Barbeiro não encontrado' }
 
     const service = await db.query.services.findFirst({
       where: and(eq(services.id, input.serviceId), eq(services.barbershopId, shop.id)),

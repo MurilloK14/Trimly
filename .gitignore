@@ -10,8 +10,30 @@ __v0_jsx-dev-runtime.ts
 .env*.local
 .env
 .env.local
+.env.production
+.env.staging
 
 # Common ignores
 node_modules
 .next/
 .DS_Store
+
+# Arquivos de teste com possíveis credenciais
+test-*.ts
+check-*.ts
+
+# Chaves e certificados
+*.pem
+*.key
+*.p12
+*.pfx
+*.secret
+
+# Credenciais de serviço
+credentials.json
+service-account.json
+gcp-key.json
+secrets.yaml
+secrets.json
+id_rsa
+id_ed25519

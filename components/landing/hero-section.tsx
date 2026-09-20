@@ -54,7 +54,7 @@ export function HeroSection() {
           </div>
 
           <p className="font-playfair text-xs sm:text-sm text-muted-foreground italic">
-            Modernize seu negócio hoje mesmo. Sem burocracias por apenas R$ 49/mês.
+            Modernize seu negócio hoje mesmo. De R$ 49,90 por apenas R$ 29,90/mês na promoção de lançamento.
           </p>
         </div>
       </div>

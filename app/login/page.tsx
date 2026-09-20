@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff, ArrowRight } from "lucide-react"
+import { Eye, EyeOff, ArrowRight, CheckCircle2 } from "lucide-react"
 import { login } from "@/lib/actions/auth"
 import { useToast } from "@/hooks/use-toast"
 
@@ -17,6 +17,21 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [isRegistered, setIsRegistered] = useState(false)
+  const [emailValue, setEmailValue] = useState("")
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('registered') === 'true') {
+        setIsRegistered(true)
+      }
+      const emailParam = params.get('email')
+      if (emailParam) {
+        setEmailValue(emailParam)
+      }
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -24,6 +39,10 @@ export default function LoginPage() {
     setErrorMsg(null)
 
     const formData = new FormData(e.currentTarget)
+    const redirectParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('redirect') : null
+    if (redirectParam) {
+      formData.set('redirectTo', redirectParam)
+    }
     const result = await login(formData)
 
     if (result && !result.success) {
@@ -57,6 +76,18 @@ export default function LoginPage() {
             <p className="text-muted-foreground">Entre com seus dados de assinante</p>
           </div>
 
+          {isRegistered && (
+            <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-start gap-3">
+              <CheckCircle2 className="size-5 shrink-0 mt-0.5" />
+              <div className="text-xs">
+                <p className="font-semibold text-sm text-foreground">Conta criada com sucesso!</p>
+                <p className="text-muted-foreground mt-0.5">
+                  Sua assinatura está ativa. Digite sua senha abaixo para entrar no painel.
+                </p>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">E-mail</Label>
@@ -66,6 +97,8 @@ export default function LoginPage() {
                 type="email"
                 placeholder="seu@email.com"
                 className="h-11 bg-secondary/50 border-border"
+                value={emailValue}
+                onChange={(e) => setEmailValue(e.target.value)}
                 required
               />
             </div>
@@ -112,8 +145,11 @@ export default function LoginPage() {
             <p className="text-sm text-muted-foreground text-center">
               Ainda não é assinante?{" "}
               <Link href="/assinar" className="text-primary hover:underline font-medium">
-                Assine agora
+                Começar 14 dias grátis
               </Link>
+            </p>
+            <p className="text-xs text-muted-foreground text-center mt-1">
+              O acesso ao sistema é liberado imediatamente após a assinatura.
             </p>
           </div>
 

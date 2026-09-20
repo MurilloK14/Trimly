@@ -41,16 +41,19 @@ export function PricingSection() {
             </div>
 
             <div className="text-center space-y-4 mb-8">
-              <h3 className="font-playfair text-xl md:text-2xl font-bold text-foreground">MK Barber Pro</h3>
+              <h3 className="font-playfair text-xl md:text-2xl font-bold text-foreground">Trimly Pro</h3>
               <p className="text-xs text-muted-foreground">Tudo o que sua barbearia precisa para escalar.</p>
               
-              <div className="flex items-baseline justify-center gap-1">
-                <span className="text-5xl sm:text-6xl text-primary font-bold" style={{ fontFamily: "var(--font-rye)" }}>
-                  R$ 49
-                </span>
-                <span className="font-playfair text-muted-foreground text-sm sm:text-base">/mês</span>
+              <div className="space-y-1">
+                <span className="text-xs text-muted-foreground line-through">De R$ 49,90/mês</span>
+                <div className="flex items-baseline justify-center gap-1">
+                  <span className="text-5xl sm:text-6xl text-primary font-bold" style={{ fontFamily: "var(--font-rye)" }}>
+                    R$ 29,90
+                  </span>
+                  <span className="font-playfair text-muted-foreground text-sm sm:text-base">/mês</span>
+                </div>
               </div>
-              <p className="text-[10px] text-muted-foreground italic">Cancele quando quiser, sem taxas de fidelidade.</p>
+              <p className="text-[10px] text-muted-foreground italic">Preço promocional de lançamento. Cancele quando quiser.</p>
             </div>
 
             <Separator className="my-6 bg-border/60" />

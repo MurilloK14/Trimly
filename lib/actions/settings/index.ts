@@ -106,7 +106,13 @@ export async function addBarber(name: string): Promise<ActionResult<void>> {
 // Soft delete de barbeiro
 export async function deleteBarber(id: string): Promise<ActionResult<void>> {
   try {
-    await db.update(barbers).set({ active: false }).where(eq(barbers.id, id))
+    const { user, shop } = await getAuthAndShop()
+    if (!user) return { success: false, error: 'Não autorizado' }
+    if (!shop) return { success: false, error: 'Barbearia não encontrada' }
+
+    await db.update(barbers)
+      .set({ active: false })
+      .where(and(eq(barbers.id, id), eq(barbers.barbershopId, shop.id)))
     return { success: true, data: undefined }
   } catch (err) {
     console.error('[deleteBarber]', err)
@@ -144,7 +150,13 @@ export async function addService(data: {
 // Soft delete de serviço
 export async function deleteService(id: string): Promise<ActionResult<void>> {
   try {
-    await db.update(services).set({ active: false }).where(eq(services.id, id))
+    const { user, shop } = await getAuthAndShop()
+    if (!user) return { success: false, error: 'Não autorizado' }
+    if (!shop) return { success: false, error: 'Barbearia não encontrada' }
+
+    await db.update(services)
+      .set({ active: false })
+      .where(and(eq(services.id, id), eq(services.barbershopId, shop.id)))
     return { success: true, data: undefined }
   } catch (err) {
     console.error('[deleteService]', err)

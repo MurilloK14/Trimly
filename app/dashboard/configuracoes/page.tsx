@@ -120,7 +120,7 @@ export default function ConfiguracoesPage() {
       setShopSlug(result.data.barbershop.slug)
       setBarbersList(result.data.barbers)
       setServicesList(result.data.services)
-      const linksResult = await getBarberServiceLinks(result.data.barbershop.id)
+      const linksResult = await getBarberServiceLinks()
       if (linksResult.success) {
         setBarberServiceLinks(new Set(linksResult.data.map(l => `${l.barberId}:${l.serviceId}`)))
       }

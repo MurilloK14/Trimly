@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, Suspense } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -21,7 +21,7 @@ import {
   Lock,
   Loader2,
   ShieldCheck,
-  AlertCircle,
+  Sparkles,
 } from "lucide-react"
 import { toast } from "sonner"
 import { compressAndValidateImage } from "@/lib/utils/image-compression"
@@ -35,9 +35,11 @@ interface FormData {
   fotoBarbearia: string | null
 }
 
-export default function OnboardingPage() {
+function CadastroContent() {
   const router = useRouter()
-  const [sessionId, setSessionId] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const sessionId = searchParams.get("session_id")
+
   const [isVerifying, setIsVerifying] = useState(true)
   const [sessionError, setSessionError] = useState<string | null>(null)
   const [alreadyCompleted, setAlreadyCompleted] = useState(false)
@@ -60,24 +62,18 @@ export default function OnboardingPage() {
 
   const [errors, setErrors] = useState<Partial<FormData>>({})
 
-  // 1. Ler session_id da URL e validar com o Stripe
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const sid = params.get("session_id")
-
-    if (!sid) {
+    if (!sessionId) {
       setIsVerifying(false)
-      setSessionError("Para criar sua conta, é necessário iniciar uma assinatura primeiro.")
+      setSessionError("Para criar sua conta, é necessário assinar o plano primeiro.")
       return
     }
 
-    setSessionId(sid)
-
-    fetch(`/api/stripe/session-info?session_id=${encodeURIComponent(sid)}`)
+    fetch(`/api/stripe/session-info?session_id=${encodeURIComponent(sessionId)}`)
       .then((res) => res.json())
       .then((data) => {
         if (!data.valid) {
-          setSessionError(data.error || "Sessão de pagamento inválida ou não concluída.")
+          setSessionError(data.error || "Sessão de pagamento não confirmada no Stripe.")
         } else if (data.alreadyCompleted) {
           setAlreadyCompleted(true)
         } else {
@@ -91,12 +87,12 @@ export default function OnboardingPage() {
         }
       })
       .catch(() => {
-        setSessionError("Erro ao conectar com o serviço de validação do Stripe.")
+        setSessionError("Erro ao verificar status da assinatura junto ao Stripe.")
       })
       .finally(() => {
         setIsVerifying(false)
       })
-  }, [])
+  }, [sessionId])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -163,7 +159,7 @@ export default function OnboardingPage() {
     setIsLoading(true)
 
     try {
-      const res = await fetch("/api/auth/complete-onboarding", {
+      const res = await fetch("/api/auth/register-subscriber", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -179,17 +175,18 @@ export default function OnboardingPage() {
       const data = await res.json()
 
       if (!res.ok || !data.success) {
-        toast.error(data.error || "Erro ao criar conta da barbearia.")
+        toast.error(data.error || "Erro ao criar conta.")
+        if (data.redirect) {
+          setTimeout(() => router.push(data.redirect), 1500)
+        }
         setIsLoading(false)
         return
       }
 
-      toast.success("Conta configurada com sucesso! Bem-vindo ao Trimly.")
-
-      // Redireciona para o dashboard com a sessão já ativa
-      router.push(data.redirect || "/dashboard")
+      toast.success("Conta criada com sucesso! Faça login para entrar no painel.")
+      router.push(data.redirect || "/login?registered=true")
     } catch {
-      toast.error("Erro de conexão ao salvar suas configurações.")
+      toast.error("Erro de conexão ao salvar sua conta.")
       setIsLoading(false)
     }
   }
@@ -200,9 +197,9 @@ export default function OnboardingPage() {
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
         <div className="text-center space-y-4 max-w-sm">
           <Loader2 className="size-10 animate-spin text-primary mx-auto" />
-          <h2 className="text-lg font-semibold">Validando assinatura...</h2>
+          <h2 className="text-lg font-semibold">Validando pagamento no Stripe...</h2>
           <p className="text-sm text-muted-foreground">
-            Aguarde um instante enquanto confirmamos seu pagamento junto ao Stripe.
+            Aguarde um instante enquanto confirmamos a sua assinatura.
           </p>
         </div>
       </div>
@@ -214,7 +211,7 @@ export default function OnboardingPage() {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <header className="border-b border-border px-6 py-4">
-          <div className="max-w-2xl mx-auto flex items-center justify-between">
+          <div className="max-w-2xl mx-auto">
             <Link href="/" className="flex items-center">
               <Image src="/logo.png" alt="Trimly" width={180} height={50} className="object-contain" />
             </Link>
@@ -227,14 +224,14 @@ export default function OnboardingPage() {
               <CheckCircle2 className="size-8" />
             </div>
             <div className="space-y-2">
-              <h1 className="text-2xl font-bold">Barbearia já configurada!</h1>
+              <h1 className="text-2xl font-bold">Conta já cadastrada!</h1>
               <p className="text-muted-foreground text-sm">
-                Esta assinatura já foi vinculada à sua barbearia. Você pode acessar seu painel diretamente.
+                Esta assinatura já foi utilizada para registrar sua conta. Acesse a tela de login para entrar no sistema.
               </p>
             </div>
             <Button asChild size="lg" className="w-full gap-2">
-              <Link href="/dashboard">
-                Acessar o painel
+              <Link href="/login">
+                Fazer login
                 <ArrowRight className="size-4" />
               </Link>
             </Button>
@@ -249,7 +246,7 @@ export default function OnboardingPage() {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <header className="border-b border-border px-6 py-4">
-          <div className="max-w-2xl mx-auto flex items-center justify-between">
+          <div className="max-w-2xl mx-auto">
             <Link href="/" className="flex items-center">
               <Image src="/logo.png" alt="Trimly" width={180} height={50} className="object-contain" />
             </Link>
@@ -275,7 +272,7 @@ export default function OnboardingPage() {
             </Button>
             <div>
               <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground">
-                Já possui conta ativa? Faça login
+                Já é assinante? Faça login
               </Link>
             </div>
           </div>
@@ -284,7 +281,7 @@ export default function OnboardingPage() {
     )
   }
 
-  // ─── ESTADO: FORMULÁRIO DE ONBOARDING ──────────────────────────────────────
+  // ─── ESTADO: FORMULÁRIO DE CADASTRO ────────────────────────────────────────
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
@@ -301,7 +298,7 @@ export default function OnboardingPage() {
           </Link>
           <div className="flex items-center gap-2 text-xs md:text-sm text-emerald-500 font-medium bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20">
             <ShieldCheck className="size-4" />
-            <span>Assinatura confirmada no Stripe</span>
+            <span>Assinatura confirmada</span>
           </div>
         </div>
       </header>
@@ -309,14 +306,14 @@ export default function OnboardingPage() {
       <main className="flex-1 flex items-center justify-center p-6 py-10">
         <div className="w-full max-w-2xl">
           <div className="text-center mb-8">
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">Configure sua barbearia</h1>
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">Crie sua conta da barbearia</h1>
             <p className="text-muted-foreground text-sm">
-              Seu período de teste de 14 dias foi ativado. Conclua o cadastro abaixo para entrar no painel.
+              Sua assinatura foi ativada. Defina sua senha e os dados do seu negócio para liberar seu acesso ao painel.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
-            {/* E-mail da conta (preenchido no Stripe) */}
+            {/* E-mail da conta (preenchido no Stripe e protegido) */}
             <div className="p-4 rounded-xl bg-secondary/30 border border-border flex items-center justify-between text-sm">
               <div>
                 <p className="text-xs text-muted-foreground">E-mail de acesso (cadastrado no Stripe)</p>
@@ -333,7 +330,7 @@ export default function OnboardingPage() {
                 <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
                   <span className="text-sm font-semibold text-primary">1</span>
                 </div>
-                <h2 className="font-semibold">Crie sua senha de acesso</h2>
+                <h2 className="font-semibold">Defina sua senha de acesso</h2>
               </div>
 
               <div className="space-y-2">
@@ -347,6 +344,7 @@ export default function OnboardingPage() {
                     className={`h-11 bg-secondary/50 border-border pr-10 ${errors.senha ? "border-destructive" : ""}`}
                     value={formData.senha}
                     onChange={handleChange}
+                    required
                   />
                   <button
                     type="button"
@@ -370,6 +368,7 @@ export default function OnboardingPage() {
                     className={`h-11 bg-secondary/50 border-border pr-10 ${errors.confirmarSenha ? "border-destructive" : ""}`}
                     value={formData.confirmarSenha}
                     onChange={handleChange}
+                    required
                   />
                   <button
                     type="button"
@@ -389,11 +388,11 @@ export default function OnboardingPage() {
                 <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
                   <span className="text-sm font-semibold text-primary">2</span>
                 </div>
-                <h2 className="font-semibold">Seus dados (Barbeiro / Proprietário)</h2>
+                <h2 className="font-semibold">Seus dados (Proprietário)</h2>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="nomeBarbeiro">Seu nome</Label>
+                <Label htmlFor="nomeBarbeiro">Seu nome completo</Label>
                 <Input
                   id="nomeBarbeiro"
                   name="nomeBarbeiro"
@@ -401,6 +400,7 @@ export default function OnboardingPage() {
                   className={`h-11 bg-secondary/50 border-border ${errors.nomeBarbeiro ? "border-destructive" : ""}`}
                   value={formData.nomeBarbeiro}
                   onChange={handleChange}
+                  required
                 />
                 {errors.nomeBarbeiro && <p className="text-xs text-destructive">{errors.nomeBarbeiro}</p>}
               </div>
@@ -431,7 +431,7 @@ export default function OnboardingPage() {
                     )}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    <p>Esta foto será exibida para seus clientes no agendamento</p>
+                    <p>Esta foto será exibida para os clientes no agendamento</p>
                     {formData.fotoBarbeiro && (
                       <button
                         type="button"
@@ -467,10 +467,11 @@ export default function OnboardingPage() {
                 <Input
                   id="nomeBarbearia"
                   name="nomeBarbearia"
-                  placeholder="Ex: Barbearia Dom Pedro"
+                  placeholder="Ex: Barbearia Imperial"
                   className={`h-11 bg-secondary/50 border-border ${errors.nomeBarbearia ? "border-destructive" : ""}`}
                   value={formData.nomeBarbearia}
                   onChange={handleChange}
+                  required
                 />
                 {errors.nomeBarbearia && <p className="text-xs text-destructive">{errors.nomeBarbearia}</p>}
               </div>
@@ -506,7 +507,7 @@ export default function OnboardingPage() {
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
                       <Upload className="size-6 mb-2" />
-                      <span className="text-sm">Clique para enviar a foto ou logo</span>
+                      <span className="text-sm">Clique para enviar a foto ou logotipo</span>
                     </div>
                   )}
                 </div>
@@ -530,11 +531,11 @@ export default function OnboardingPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="size-5 animate-spin" />
-                  <span>Configurando sua barbearia...</span>
+                  <span>Criando conta da barbearia...</span>
                 </>
               ) : (
                 <>
-                  <span>Concluir e acessar o painel</span>
+                  <span>Criar conta e ir para o login</span>
                   <ArrowRight className="size-5" />
                 </>
               )}
@@ -543,5 +544,19 @@ export default function OnboardingPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function CadastroPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
+          <Loader2 className="size-10 animate-spin text-primary" />
+        </div>
+      }
+    >
+      <CadastroContent />
+    </Suspense>
   )
 }

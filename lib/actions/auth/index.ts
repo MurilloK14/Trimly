@@ -27,8 +27,15 @@ export async function login(formData: FormData): Promise<ActionResult<void>> {
     return { success: false, error: 'Ocorreu um erro ao fazer login' }
   }
 
-  // Redirect to dashboard
-  redirect('/dashboard')
+  let redirectTo = (formData.get('redirectTo') as string) || '/dashboard'
+
+  // Proteção contra Open Redirect — aceita apenas paths relativos internos
+  if (!redirectTo.startsWith('/') || redirectTo.startsWith('//')) {
+    redirectTo = '/dashboard'
+  }
+
+  // Redireciona para a rota solicitada ou dashboard
+  redirect(redirectTo)
 }
 
 export async function logout(): Promise<void> {

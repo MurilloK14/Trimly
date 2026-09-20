@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { db } from '@/lib/db'
 import { barbershops, barbers, barberServices } from '@/lib/db/schema'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import type { ActionResult } from '@/lib/booking/types'
 
 export interface ProfileData {
@@ -96,26 +96,34 @@ export interface BarberServiceLink {
   serviceId: string
 }
 
-// Busca todos os vínculos barbeiro↔serviço para uma barbearia
-export async function getBarberServiceLinks(barbershopId: string): Promise<ActionResult<BarberServiceLink[]>> {
+// Busca todos os vínculos barbeiro↔serviço para a barbearia do usuário logado
+export async function getBarberServiceLinks(): Promise<ActionResult<BarberServiceLink[]>> {
   try {
-    const rows = await db.query.barberServices.findMany({
-      where: (bs) => {
-        // Join via barberId → barber → barbershopId
-        return undefined // sem where aqui, filtramos abaixo
-      },
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'Não autorizado' }
+
+    const shop = await db.query.barbershops.findFirst({
+      where: and(eq(barbershops.ownerId, user.id), eq(barbershops.active, true)),
     })
+    if (!shop) return { success: false, error: 'Barbearia não encontrada' }
 
     // Busca barbeiros da barbearia para filtrar
     const shopBarbers = await db.query.barbers.findMany({
-      where: eq(barbers.barbershopId, barbershopId),
+      where: eq(barbers.barbershopId, shop.id),
       columns: { id: true },
     })
-    const barberIds = new Set(shopBarbers.map(b => b.id))
+    const barberIds = shopBarbers.map(b => b.id)
 
-    const links = rows
-      .filter(r => barberIds.has(r.barberId))
-      .map(r => ({ barberId: r.barberId, serviceId: r.serviceId }))
+    if (barberIds.length === 0) {
+      return { success: true, data: [] }
+    }
+
+    const rows = await db.query.barberServices.findMany({
+      where: inArray(barberServices.barberId, barberIds),
+    })
+
+    const links = rows.map(r => ({ barberId: r.barberId, serviceId: r.serviceId }))
 
     return { success: true, data: links }
   } catch (err) {
@@ -127,6 +135,21 @@ export async function getBarberServiceLinks(barbershopId: string): Promise<Actio
 // Adiciona vínculo barbeiro↔serviço (ignora duplicado)
 export async function linkBarberService(barberId: string, serviceId: string): Promise<ActionResult<void>> {
   try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'Não autorizado' }
+
+    const shop = await db.query.barbershops.findFirst({
+      where: and(eq(barbershops.ownerId, user.id), eq(barbershops.active, true)),
+    })
+    if (!shop) return { success: false, error: 'Barbearia não encontrada' }
+
+    // Verificar que o barbeiro pertence à barbearia do usuário
+    const barber = await db.query.barbers.findFirst({
+      where: and(eq(barbers.id, barberId), eq(barbers.barbershopId, shop.id)),
+    })
+    if (!barber) return { success: false, error: 'Barbeiro não encontrado' }
+
     await db.insert(barberServices)
       .values({ barberId, serviceId })
       .onConflictDoNothing()
@@ -140,6 +163,21 @@ export async function linkBarberService(barberId: string, serviceId: string): Pr
 // Remove vínculo barbeiro↔serviço
 export async function unlinkBarberService(barberId: string, serviceId: string): Promise<ActionResult<void>> {
   try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'Não autorizado' }
+
+    const shop = await db.query.barbershops.findFirst({
+      where: and(eq(barbershops.ownerId, user.id), eq(barbershops.active, true)),
+    })
+    if (!shop) return { success: false, error: 'Barbearia não encontrada' }
+
+    // Verificar que o barbeiro pertence à barbearia do usuário
+    const barber = await db.query.barbers.findFirst({
+      where: and(eq(barbers.id, barberId), eq(barbers.barbershopId, shop.id)),
+    })
+    if (!barber) return { success: false, error: 'Barbeiro não encontrado' }
+
     await db.delete(barberServices)
       .where(and(eq(barberServices.barberId, barberId), eq(barberServices.serviceId, serviceId)))
     return { success: true, data: undefined }
