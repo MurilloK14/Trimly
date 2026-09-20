@@ -92,6 +92,8 @@ async function openPortal() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+export const dynamic = 'force-dynamic'
+
 export default async function AssinaturaPage() {
   const result = await getSubscriptionInfo()
 
