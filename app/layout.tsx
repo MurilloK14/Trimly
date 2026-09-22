@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Plus_Jakarta_Sans } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
+import { Analytics } from '@vercel/analytics/react'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Toaster } from '@/components/ui/toaster'
 import './globals.css'
 
@@ -70,7 +71,8 @@ export default function RootLayout({
       <body className={`${plusJakartaSans.variable} font-sans antialiased`}>
         {children}
         <Toaster />
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )
